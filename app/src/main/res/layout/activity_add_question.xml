@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Spinner chọn danh mục -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chọn danh mục:" />
+
+        <Spinner
+            android:id="@+id/spinner_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Spinner chọn bài kiểm tra -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chọn bài kiểm tra:" />
+
+        <Spinner
+            android:id="@+id/spinner_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Nhập câu hỏi -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nhập câu hỏi:" />
+
+        <EditText
+            android:id="@+id/edt_question"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nhập câu hỏi" />
+
+        <!-- Nhập các đáp án -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đáp án A:" />
+        <EditText
+            android:id="@+id/edt_optionA"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Đáp án A" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đáp án B:" />
+        <EditText
+            android:id="@+id/edt_optionB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Đáp án B" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đáp án C:" />
+        <EditText
+            android:id="@+id/edt_optionC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Đáp án C" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đáp án D:" />
+        <EditText
+            android:id="@+id/edt_optionD"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Đáp án D" />
+
+        <!-- Chọn đáp án đúng -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chọn đáp án đúng:" />
+
+        <RadioGroup
+            android:id="@+id/radio_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/radio_A"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="A" />
+            <RadioButton
+                android:id="@+id/radio_B"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="B" />
+            <RadioButton
+                android:id="@+id/radio_C"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="C" />
+            <RadioButton
+                android:id="@+id/radio_D"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="D" />
+        </RadioGroup>
+
+        <!-- Nút thêm câu hỏi -->
+        <Button
+            android:id="@+id/btn_add_question"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thêm Câu Hỏi" />
+    </LinearLayout>
+</ScrollView>
