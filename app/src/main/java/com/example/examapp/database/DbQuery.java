@@ -148,6 +148,10 @@ public class DbQuery {
         g_bookmarkList.clear();
         tmp = 0;
 
+        if(g_bookmarkList.size() == 0){
+            listener.onSuccess();
+        }
+
         for(int i = 0; i <g_bmIdList.size(); i++){
 
             String docID = g_bmIdList.get(i);
