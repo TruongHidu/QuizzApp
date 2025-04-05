@@ -70,6 +70,7 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.AnswerView
            if(selected == -1){
                txtRessult.setText("Not answered");
                txtRessult.setTextColor(itemView.getContext().getColor(R.color.black));
+               setOptionColorf(selected, R.color.textNormal);
            }else if(selected == correctOption){
                txtRessult.setText("Correct");
                txtRessult.setTextColor(itemView.getContext().getColor(R.color.green));
@@ -83,21 +84,29 @@ public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.AnswerView
         }
 
         private void setOptionColorf(int selected, int color) {
-            switch (selected) {
-                case 1:
-                    txtOptionA.setTextColor(itemView.getContext().getColor(color));
-                    break;
-                case 2:
-                    txtOptionB.setTextColor(itemView.getContext().getColor(color));
-                    break;
-                case 3:
-                    txtOptionC.setTextColor(itemView.getContext().getColor(color));
-                    break;
-                case 4:
-                    txtOptionD.setTextColor(itemView.getContext().getColor(color));
-                    break;
-                default:
+            if(selected == 1){
+                txtOptionA.setTextColor(itemView.getContext().getColor(color));
+            } else{
+                txtOptionA.setTextColor(itemView.getContext().getColor(R.color.textNormal));
             }
+            if(selected == 2){
+                txtOptionB.setTextColor(itemView.getContext().getColor(color));
+            } else{
+                txtOptionB.setTextColor(itemView.getContext().getColor(R.color.textNormal));
+            }
+            if(selected == 3){
+                txtOptionC.setTextColor(itemView.getContext().getColor(color));
+            } else{
+                txtOptionC.setTextColor(itemView.getContext().getColor(R.color.textNormal));
+            }
+            if(selected == 4){
+                txtOptionD.setTextColor(itemView.getContext().getColor(color ));
+            } else{
+                txtOptionD.setTextColor(itemView.getContext().getColor(R.color.textNormal));
+            }
+
         }
     }
+
+
 }

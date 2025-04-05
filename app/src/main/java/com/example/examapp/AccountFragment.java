@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.examapp.activities.BookMarkActivity;
 import com.example.examapp.activities.LoginActivity;
 import com.example.examapp.activities.MyProfileActivity;
 import com.example.examapp.database.DbQuery;
@@ -51,6 +52,12 @@ public class AccountFragment extends Fragment {
         binding.txtName.setText(DbQuery.myProfile.getName());
         binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
         binding.imgName.setText(DbQuery.myProfile.getName().toUpperCase().substring(0, 1));
+
+        binding.btnBookMarkQuestion.setOnClickListener(view -> {
+            Intent intent = new Intent(getActivity(), BookMarkActivity.class);
+            startActivity(intent);
+
+        });
 
 
       if(DbQuery.g_userList.size() == 0){

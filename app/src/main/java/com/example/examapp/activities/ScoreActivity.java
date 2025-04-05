@@ -20,6 +20,7 @@ import com.example.examapp.R;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityScoreBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.model.QuestionModel;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.Timer;
@@ -46,6 +47,8 @@ public class ScoreActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("Result");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+
+
         progressDialog = new Dialog(ScoreActivity.this);
         progressDialog.setContentView(R.layout.dialog_layout);
         progressDialog.setCancelable(false);
@@ -55,9 +58,34 @@ public class ScoreActivity extends AppCompatActivity {
         progressDialog.show();
 
         loadData();
+
+        setBookMarks();
+
         setClickListeners();
         saveResult();
 
+
+    }
+
+    private void setBookMarks() {
+        for(int i = 0; i < DbQuery.g_questionList.size(); i++){
+            QuestionModel questionModel = DbQuery.g_questionList.get(i);
+
+            if(questionModel.isBookMarked()){
+                if(! DbQuery.g_bmIdList.contains(questionModel.getQuestionId())){
+                    DbQuery.g_bmIdList.add(questionModel.getQuestionId());
+                    DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+
+                }
+
+            }else{
+                if(DbQuery.g_bmIdList.contains(questionModel.getQuestionId())){
+                    DbQuery.g_bmIdList.remove(questionModel.getQuestionId());
+                    DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+
+                }
+            }
+        }
 
     }
 
@@ -84,6 +112,8 @@ public class ScoreActivity extends AppCompatActivity {
         });
 
         binding.btnViewAnswer.setOnClickListener(view -> {
+            Intent intent = new Intent(ScoreActivity.this, AnswerActivity.class);
+            startActivity(intent);
 
         });
 

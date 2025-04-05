@@ -1,6 +1,7 @@
 package com.example.examapp.model;
 
 public class QuestionModel {
+    private String questionId;
     private String question;
     private String optionA;
     private String optionB;
@@ -11,6 +12,7 @@ public class QuestionModel {
 
     private int selectedOption;
     private  int status;
+    private boolean isBookMarked;
 
     public String getQuestion() {
         return question;
@@ -68,6 +70,22 @@ public class QuestionModel {
         this.status = status;
     }
 
+    public boolean isBookMarked() {
+        return isBookMarked;
+    }
+
+    public String getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(String questionId) {
+        this.questionId = questionId;
+    }
+
+    public void setBookMarked(boolean bookMarked) {
+        isBookMarked = bookMarked;
+    }
+
     public int getCorrectOption() {
         return correctOption;
     }
@@ -76,7 +94,8 @@ public class QuestionModel {
         this.correctOption = correctOption;
     }
 
-    public QuestionModel(String question, String optionA, String optionB, String optionC, String optionD, int correctOption, int selectedOption, int status) {
+    public QuestionModel(String questionId, String question, String optionA, String optionB, String optionC, String optionD, int correctOption, int selectedOption, int status, boolean isBookMarked) {
+        this.questionId = questionId;
         this.question = question;
         this.optionA = optionA;
         this.optionB = optionB;
@@ -85,6 +104,7 @@ public class QuestionModel {
         this.correctOption = correctOption;
         this.selectedOption = selectedOption;
         this.status = status;
+        this.isBookMarked = isBookMarked;
 
     }
 }

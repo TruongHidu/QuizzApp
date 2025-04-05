@@ -2,6 +2,7 @@ package com.example.examapp.activities;
 
 import static com.example.examapp.database.DbQuery.HIGHTLIGHTED;
 import static com.example.examapp.database.DbQuery.NOT_VISITED;
+import static com.example.examapp.database.DbQuery.g_questionList;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -40,7 +41,7 @@ public class QuestionActivity extends AppCompatActivity {
     private TextView txtQuestId, txtCatName, txtTime;
     private Button btnClear, btnMark, btnSubmit;
     private ImageButton btnPre, btnNext, btnCloseList;
-    private ImageView btnListQuestion, btnMarkImage;
+    private ImageView btnListQuestion, btnMarkImage, btnBookMark;
     private QuestionGridAdapter questionGridAdapter;
     private CountDownTimer timer;
     private long timeLeft;
@@ -87,12 +88,19 @@ public class QuestionActivity extends AppCompatActivity {
         btnMarkImage = findViewById(R.id.imgMarked);
         btnMark = findViewById(R.id.btnMark);
         btnSubmit = findViewById(R.id.btnSubmit);
-
+        btnBookMark = findViewById(R.id.btnBookMark);
 
         questionId = 0;
         txtQuestId.setText((questionId + 1) + "/" + DbQuery.g_questionList.size());
         txtCatName.setText(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
+
         DbQuery.g_questionList.get(questionId).setStatus(DbQuery.UNANSWERED);
+
+        if(g_questionList.get(0).isBookMarked()){
+            btnBookMark.setImageResource(R.drawable.ic_bookmark);
+        }else{
+            btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
+        }
 
 
 
@@ -176,6 +184,23 @@ public class QuestionActivity extends AppCompatActivity {
                 }
             }
         });
+
+        btnBookMark.setOnClickListener(view -> {
+            addToBookMark();
+        });
+    }
+
+    private void addToBookMark() {
+        if(g_questionList.get(questionId).isBookMarked()){
+            g_questionList.get(questionId).setBookMarked(false);
+            btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
+
+        }else{
+            g_questionList.get(questionId).setBookMarked(true);
+            btnBookMark.setImageResource(R.drawable.ic_bookmark);
+
+        }
+
     }
 
     private void submitTest() {
@@ -231,6 +256,12 @@ public class QuestionActivity extends AppCompatActivity {
                 }
 
                 txtQuestId.setText((questionId + 1) + "/" + DbQuery.g_questionList.size());
+
+                if(g_questionList.get(questionId).isBookMarked()){
+                    btnBookMark.setImageResource(R.drawable.ic_bookmark);
+                }else{
+                    btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
+                }
             }
         });
     }

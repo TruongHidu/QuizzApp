@@ -12,4 +12,5 @@
     <color name="pink">#f704e1</color>
     <color name="red">#ff0000</color>
     <color name="greenLight">#1DE9B6</color>
+    <color name="textNormal">#919191</color>
 </resources>
