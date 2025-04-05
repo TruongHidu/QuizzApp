@@ -95,7 +95,7 @@ public class TestActivity extends AppCompatActivity {
                             adapter = new TestAdapter(DbQuery.g_testList);
                             binding.rcvTest.setAdapter(adapter);
                         } else {
-                            Toast.makeText(TestActivity.this, "No tests available", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(TestActivity.this, "None tests available", Toast.LENGTH_SHORT).show();
                         }
                     }
                     @Override
@@ -108,7 +108,7 @@ public class TestActivity extends AppCompatActivity {
             @Override
             public void onFailture() {
                 progressDialog.dismiss();
-                Toast.makeText(TestActivity.this, "Something went wrong! Please try again later.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(TestActivity.this, "Don't have any test of this Category!", Toast.LENGTH_SHORT).show();
             }
         });
     }

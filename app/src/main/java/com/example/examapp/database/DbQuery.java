@@ -1,6 +1,7 @@
 package com.example.examapp.database;
 
 import android.util.ArrayMap;
+import android.widget.Toast;
 
 import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.CategoryModel;
@@ -276,19 +277,54 @@ public class DbQuery {
                 .get().addOnSuccessListener(documentSnapshot -> {
 
                     int noOfTest = g_categoryList.get(g_selectedCatIndex).getNoOfTests();
-                    for (int i = 1; i <= noOfTest; i++) {
-                        g_testList.add(new TestModel(documentSnapshot.getString("TEST" + String.valueOf(i) + "_ID"), 0,
-                                documentSnapshot.getLong("TEST" + i + "_TIME").intValue()
-                        ));
+                    if(noOfTest == 0){
+                        listener.onFailture();
+                        return;
                     }
-                    listener.onSuccess();
 
+                    // Dùng Atomic để theo dõi các lượt gọi Firestore async
+                    AtomicInteger loadedCount = new AtomicInteger(0);
+                    AtomicInteger totalToCheck = new AtomicInteger(noOfTest);
+
+                    for (int i = 1; i <= noOfTest; i++) {
+                        String testId = documentSnapshot.getString("TEST" + i + "_ID");
+                        int testTime = documentSnapshot.getLong("TEST" + i + "_TIME").intValue();
+
+                        // Kiểm tra xem test này có câu hỏi nào không
+                        g_firestore.collection("Question")
+                                .whereEqualTo("CATEGORY", g_categoryList.get(g_selectedCatIndex).getDocId())
+                                .whereEqualTo("TEST", testId)
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener(queryDocumentSnapshots -> {
+                                    if (!queryDocumentSnapshots.isEmpty()) {
+                                        g_testList.add(new TestModel(testId, 0, testTime));
+                                    }
+                                    if (loadedCount.incrementAndGet() == totalToCheck.get()) {
+                                        if (g_testList.isEmpty()) {
+                                            listener.onFailture(); // Không có bài test nào có câu hỏi
+                                        } else {
+                                            listener.onSuccess();
+                                        }
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (loadedCount.incrementAndGet() == totalToCheck.get()) {
+                                        if (g_testList.isEmpty()) {
+                                            listener.onFailture();
+                                        } else {
+                                            listener.onSuccess();
+                                        }
+                                    }
+                                });
+                    }
 
                 })
                 .addOnFailureListener(e -> {
                     listener.onFailture();
                 });
     }
+
     public static void loadData(MyCompleteListener listener) {
         loadCategories(new MyCompleteListener() {
             @Override
