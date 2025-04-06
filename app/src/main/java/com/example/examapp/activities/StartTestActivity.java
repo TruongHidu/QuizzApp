@@ -3,11 +3,13 @@ package com.example.examapp.activities;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -29,6 +31,11 @@ public class StartTestActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         binding = ActivityStartTestBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+//
+//        setSupportActionBar(binding.toolbar);
+//        getSupportActionBar().setDisplayShowTitleEnabled(true);
+//        getSupportActionBar().setTitle(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         progressDialog = new Dialog(StartTestActivity.this);
         progressDialog.setContentView(R.layout.dialog_layout);
@@ -109,5 +116,13 @@ public class StartTestActivity extends AppCompatActivity {
             finish();
         });
     }
+
+//    @Override
+//    public boolean onOptionsItemSelected(@NonNull MenuItem item){
+//        if(item.getItemId() == android.R.id.home){
+//            StartTestActivity.this.finish();
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
 
 }
