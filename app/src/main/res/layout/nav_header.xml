@@ -7,10 +7,19 @@
     android:background="?attr/colorPrimary"
     android:padding="16dp">
 
-    <ImageView
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:src="@drawable/ic_account" />
+    <TextView
+        android:id="@+id/imgName"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/circle"
+        android:backgroundTint="@color/greenLight"
+        android:gravity="center"
+        android:text="A"
+        android:textColor="@color/white"
+        android:textSize="25sp"
+        android:textStyle="bold"
+
+        />
 
     <TextView
         android:id="@+id/txtNameDrawer"
@@ -19,15 +28,15 @@
         android:text="User Name"
         android:textColor="@android:color/white"
         android:textStyle="bold"
-        android:textSize="20sp"
+        android:textSize="18sp"
 />
     <TextView
         android:id="@+id/txtEmailDrawer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Email"
-        android:textColor="@android:color/white"
-        android:textSize="13dp"
+        android:textColor="@android:color/darker_gray"
+        android:textSize="12dp"
         />
 
 </LinearLayout>

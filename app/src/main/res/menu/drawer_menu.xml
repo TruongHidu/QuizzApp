@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/nav_home"
-        android:title="Home"
-        android:icon="@drawable/ic_home" />
-    <item
-        android:id="@+id/nav_profile"
-        android:title="Account"
-        android:icon="@drawable/ic_account" />
-    <item
-        android:id="@+id/nav_leaderboard"
-        android:title="Leaderboard"
-        android:icon="@drawable/ic_leaderboard" />
 
-    <item
-        android:id="@+id/nav_logout"
-        android:title="Leaderboard"
-        android:icon="@drawable/ic_logout" />
+    <!-- Nhóm 1 -->
+    <group android:id="@+id/group_main">
+        <item
+            android:id="@+id/nav_home"
+            android:title="Home"
+            android:icon="@drawable/ic_home" />
+        <item
+            android:id="@+id/nav_profile"
+            android:title="Account"
+            android:icon="@drawable/ic_account" />
+        <item
+            android:id="@+id/nav_leaderboard"
+            android:title="Leaderboard"
+            android:icon="@drawable/ic_leaderboard" />
+    </group>
 
+    <group android:id="@+id/group_logout"
+        android:paddingTop="16dp">
+        <item
+            android:id="@+id/nav_logout"
+            android:title="Logout"
+            android:icon="@drawable/ic_logout" />
+    </group>
 
 </menu>

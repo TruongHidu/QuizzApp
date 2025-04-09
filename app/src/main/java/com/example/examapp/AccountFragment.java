@@ -124,4 +124,43 @@ public class AccountFragment extends Fragment {
         myPerformanece.setRank(rank);
     }
 
+    private void updateUserInfo() {
+        binding.txtName.setText(DbQuery.myProfile.getName());
+        binding.imgName.setText(DbQuery.myProfile.getName().toUpperCase().substring(0, 1));
+        binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
+
+        if (DbQuery.g_userList.size() == 0) {
+            progressDialog.show();
+            DbQuery.getTopUsers(new MyCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    if (DbQuery.myPerformanece.getScore() != 0) {
+                        if (DbQuery.isMeOnTopList) {
+                            caculateRank();
+                        }
+                        binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
+                        binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
+                    }
+                    progressDialog.dismiss();
+                }
+
+                @Override
+                public void onFailture() {
+                    progressDialog.dismiss();
+                    Toast.makeText(getContext(), "Something went wrong", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            if (DbQuery.myPerformanece.getScore() != 0) {
+                binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
+            }
+        }
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUserInfo();
+    }
+
+
 }

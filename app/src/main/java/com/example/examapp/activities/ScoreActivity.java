@@ -118,7 +118,10 @@ public class ScoreActivity extends AppCompatActivity {
         });
 
         binding.btnLeaderboard.setOnClickListener(view -> {
-
+            Intent intent = new Intent(ScoreActivity.this, MainActivity.class);
+            intent.putExtra("FRAGMENT_TO_LOAD", "LEADERBOARD");
+            startActivity(intent);
+            finish();
         });
     }
 

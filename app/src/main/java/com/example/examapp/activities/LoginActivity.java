@@ -3,6 +3,7 @@ package com.example.examapp.activities;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +23,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 
 public class LoginActivity extends AppCompatActivity {
     ActivityLoginBinding binding;
@@ -74,12 +77,12 @@ public class LoginActivity extends AppCompatActivity {
         binding.gSignIn.setOnClickListener(view -> {
             googleSignIn();
         });
-
-        binding.gSignIn.setOnClickListener(view -> {
-            Intent intent = new Intent(LoginActivity.this, AddQuestionActivity.class);
-            startActivity(intent);
-            LoginActivity.this.finish();
-        });
+//
+//        binding.gSignIn.setOnClickListener(view -> {
+//            Intent intent = new Intent(LoginActivity.this, AddQuestionActivity.class);
+//            startActivity(intent);
+//            LoginActivity.this.finish();
+//        });
     }
 
     private void googleSignIn() {
@@ -87,13 +90,16 @@ public class LoginActivity extends AppCompatActivity {
 
     private void login() {
         progressDialog.show();
-        mAuth.signInWithEmailAndPassword(binding.txtEmail.getText().toString().trim(), binding.txtPassword.getText().toString().trim())
+        String email = binding.txtEmail.getText().toString().trim();
+        String password = binding.txtPassword.getText().toString().trim();
+
+        mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Toast.makeText(LoginActivity.this, "Login success.",Toast.LENGTH_SHORT).show();
+                            // Đăng nhập thành công
+                            Toast.makeText(LoginActivity.this, "Login success.", Toast.LENGTH_SHORT).show();
 
                             DbQuery.loadData(new MyCompleteListener() {
                                 @Override
@@ -102,7 +108,6 @@ public class LoginActivity extends AppCompatActivity {
                                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                     startActivity(intent);
                                     LoginActivity.this.finish();
-
                                 }
 
                                 @Override
@@ -110,30 +115,46 @@ public class LoginActivity extends AppCompatActivity {
                                     progressDialog.dismiss();
                                     Toast.makeText(LoginActivity.this, "Something went wrong! Please try again later.",
                                             Toast.LENGTH_SHORT).show();
-
                                 }
                             });
 
                         } else {
                             progressDialog.dismiss();
-                            Toast.makeText(LoginActivity.this, task.getException().getMessage(),Toast.LENGTH_SHORT).show();
 
+                            Exception e = task.getException();
+                            if (e instanceof FirebaseAuthInvalidUserException) {
+                                // Email không tồn tại
+                                Toast.makeText(LoginActivity.this, "Email not exists!", Toast.LENGTH_SHORT).show();
+                            } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                                // Mật khẩu sai
+                                Toast.makeText(LoginActivity.this, "Invalid password. Please try again!", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 });
-
-
     }
+
 
     private boolean validateData() {
-        boolean status = false;
-        if(binding.txtEmail.getText().toString().isEmpty()){
-            binding.txtEmail.setError("Enter Email");
-        }else if(binding.txtPassword.getText().toString().isEmpty()){
-            binding.txtPassword.setError("Enter Password");
-        }else{
-            status = true;
+        String email = binding.txtEmail.getText().toString().trim();
+        String password = binding.txtPassword.getText().toString().trim();
+
+        if (email.isEmpty()) {
+            binding.txtEmail.setError("Enter email");
+            return false;
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.txtEmail.setError("Email not qualified!");
+            return false;
         }
-        return status;
+
+        if (password.isEmpty()) {
+            binding.txtPassword.setError("Input password");
+            return false;
+        }
+
+        return true;
     }
+
 }
