@@ -16,6 +16,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.example.examapp.R;
 import com.example.examapp.admin.AddQuestionActivity;
+import com.example.examapp.admin.HomeAdminActivity;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityLoginBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
@@ -89,9 +90,17 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login() {
+
         progressDialog.show();
         String email = binding.txtEmail.getText().toString().trim();
         String password = binding.txtPassword.getText().toString().trim();
+
+        if(email.equals("admin@gmail.com") && password.equals("admin")){
+            progressDialog.dismiss();
+            startActivity(new Intent(LoginActivity.this, HomeAdminActivity.class));
+            LoginActivity.this.finish();
+            return;
+        }
 
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {

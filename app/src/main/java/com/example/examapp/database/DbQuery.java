@@ -11,6 +11,7 @@ import com.example.examapp.model.RankModel;
 import com.example.examapp.model.TestModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -19,6 +20,7 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -272,27 +274,31 @@ public class DbQuery {
         }
 
         g_testList.clear();
-        g_firestore.collection("QUIZ").document(g_categoryList.get(g_selectedCatIndex).getDocId())
-                .collection("TEST_LIST").document("TEST_INFO")
-                .get().addOnSuccessListener(documentSnapshot -> {
 
-                    int noOfTest = g_categoryList.get(g_selectedCatIndex).getNoOfTests();
-                    if(noOfTest == 0){
+        String catDocId = g_categoryList.get(g_selectedCatIndex).getDocId();
+
+        g_firestore.collection("QUIZ")
+                .document(catDocId)
+                .collection("TEST_LIST")
+                .document("TEST_INFO")
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    List<Map<String, Object>> testsArray = (List<Map<String, Object>>) documentSnapshot.get("TESTs");
+
+                    if (testsArray == null || testsArray.isEmpty()) {
                         listener.onFailture();
                         return;
                     }
 
-                    // Dùng Atomic để theo dõi các lượt gọi Firestore async
                     AtomicInteger loadedCount = new AtomicInteger(0);
-                    AtomicInteger totalToCheck = new AtomicInteger(noOfTest);
+                    AtomicInteger totalToCheck = new AtomicInteger(testsArray.size());
 
-                    for (int i = 1; i <= noOfTest; i++) {
-                        String testId = documentSnapshot.getString("TEST" + i + "_ID");
-                        int testTime = documentSnapshot.getLong("TEST" + i + "_TIME").intValue();
+                    for (Map<String, Object> test : testsArray) {
+                        String testId = (String) test.get("id");
+                        int testTime = ((Long) test.get("time")).intValue();
 
-                        // Kiểm tra xem test này có câu hỏi nào không
                         g_firestore.collection("Question")
-                                .whereEqualTo("CATEGORY", g_categoryList.get(g_selectedCatIndex).getDocId())
+                                .whereEqualTo("CATEGORY", catDocId)
                                 .whereEqualTo("TEST", testId)
                                 .limit(1)
                                 .get()
@@ -300,9 +306,10 @@ public class DbQuery {
                                     if (!queryDocumentSnapshots.isEmpty()) {
                                         g_testList.add(new TestModel(testId, 0, testTime));
                                     }
+
                                     if (loadedCount.incrementAndGet() == totalToCheck.get()) {
                                         if (g_testList.isEmpty()) {
-                                            listener.onFailture(); // Không có bài test nào có câu hỏi
+                                            listener.onFailture();
                                         } else {
                                             listener.onSuccess();
                                         }
@@ -318,7 +325,6 @@ public class DbQuery {
                                     }
                                 });
                     }
-
                 })
                 .addOnFailureListener(e -> {
                     listener.onFailture();
@@ -416,57 +422,80 @@ public class DbQuery {
                 });
     }
     public static void saveResult(int score, MyCompleteListener listener) {
-        DocumentReference userDoc = g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        DocumentReference userDoc = g_firestore.collection("USERS")
+                .document(FirebaseAuth.getInstance().getCurrentUser().getUid());
         DocumentReference scoreDoc = userDoc.collection("USER_DATA").document("MY_SCORES");
 
-        //Bookmark
+        // 1. Cập nhật BOOKMARKS
         Map<String, Object> bmData = new ArrayMap<>();
-        for(int i = 0; i < g_bmIdList.size(); i++){
-            bmData.put("BM" + String.valueOf(i + 1), g_bmIdList.get(i));
-
+        for (int i = 0; i < g_bmIdList.size(); i++) {
+            bmData.put("BM" + (i + 1), g_bmIdList.get(i));
         }
-
         DocumentReference bmDoc = userDoc.collection("USER_DATA").document("BOOKMARKS");
-
-
 
         WriteBatch batch = g_firestore.batch();
         batch.set(bmDoc, bmData);
 
-
+        // 2. Lấy điểm từ Firestore
         scoreDoc.get().addOnSuccessListener(documentSnapshot -> {
             Map<String, Object> testData = new ArrayMap<>();
-            AtomicInteger totalScore = new AtomicInteger(0); // Dùng AtomicInteger để sửa lỗi biến không final
+            AtomicInteger totalScore = new AtomicInteger(0);
 
-            // Tính tổng điểm từ tất cả các bài kiểm tra
-            for (int i = 0; i < g_testList.size(); i++) {
-                String testId = g_testList.get(i).getTestId();
-
-                int topScore = documentSnapshot.contains(testId) ? documentSnapshot.getLong(testId).intValue() : 0;
-                if (i == g_selected_test_index && score > topScore) {
-                    topScore = score;
-                }
-                totalScore.addAndGet(topScore);
-                testData.put(testId, topScore);
+            Map<String, Object> allScores = documentSnapshot.getData();
+            if (allScores == null) {
+                allScores = new HashMap<>();
             }
 
+            // 3. Cập nhật điểm bài test đã từng làm hoặc đang làm
+            for (int i = 0; i < g_testList.size(); i++) {
+                String testId = g_testList.get(i).getTestId();
+                int savedTopScore = 0;
+                boolean hasPreviousScore = allScores.containsKey(testId);
+
+                if (hasPreviousScore) {
+                    Object value = allScores.get(testId);
+                    if (value instanceof Long) {
+                        savedTopScore = ((Long) value).intValue();
+                    } else if (value instanceof Integer) {
+                        savedTopScore = (Integer) value;
+                    }
+                }
+
+                // Nếu bài đang làm hoặc đã có điểm cũ, thì cập nhật
+                if (i == g_selected_test_index || hasPreviousScore) {
+                    int newTopScore = (i == g_selected_test_index && score > savedTopScore) ? score : savedTopScore;
+                    g_testList.get(i).setTopScore(newTopScore);
+
+                    testData.put(testId, (long) newTopScore);
+                    allScores.put(testId, newTopScore);
+                }
+            }
+
+            // 4. Tính tổng điểm từ tất cả bài đã làm
+            for (Object value : allScores.values()) {
+                if (value instanceof Long) {
+                    totalScore.addAndGet(((Long) value).intValue());
+                } else if (value instanceof Integer) {
+                    totalScore.addAndGet((Integer) value);
+                }
+            }
+
+            // 5. Ghi vào Firestore
             Map<String, Object> userData = new ArrayMap<>();
             userData.put("TOTAL_SCORE", totalScore.get());
             userData.put("BOOKMARKS", g_bmIdList.size());
 
-//            WriteBatch batch = g_firestore.batch();
-            batch.update(userDoc,userData);
-
-
+            batch.update(userDoc, userData);
             batch.set(scoreDoc, testData, SetOptions.merge());
 
             batch.commit().addOnSuccessListener(unused -> {
-                g_testList.get(g_selected_test_index).setTopScore(score);
                 myPerformanece.setScore(totalScore.get());
                 listener.onSuccess();
             }).addOnFailureListener(e -> listener.onFailture());
+
         }).addOnFailureListener(e -> listener.onFailture());
     }
+
 
 
 

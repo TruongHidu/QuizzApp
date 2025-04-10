@@ -72,7 +72,7 @@ public class StartTestActivity extends AppCompatActivity {
             binding.txtCatName.setText(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
         }
 
-        binding.txtTestNO.setText("Test " + (DbQuery.g_selected_test_index + 1));
+        binding.txtTestNO.setText("Test " + DbQuery.g_testList.get(DbQuery.g_selected_test_index).getTestId());
 
         if (DbQuery.g_testList != null && DbQuery.g_selected_test_index < DbQuery.g_testList.size()) {
             binding.txtBestScore.setText(String.valueOf(DbQuery.g_testList.get(DbQuery.g_selected_test_index).getTopScore()));

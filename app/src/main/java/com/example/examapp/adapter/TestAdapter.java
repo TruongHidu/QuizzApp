@@ -34,8 +34,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull TestAdapter.TestViewHolder testViewHolder, int position) {
-        int progress = testList.get(position).getTopScore();
-        testViewHolder.setData(position, progress);
+        testViewHolder.setData(position, testList.get(position));
 
     }
 
@@ -57,12 +56,12 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
 
         }
 
-        public void setData(int position, int progress) {
+        public void setData(int position, TestModel testModel) {
             if (getAdapterPosition() == RecyclerView.NO_POSITION) return;
 
-            testNo.setText("Test No " + (position + 1));
-            txtScore.setText(progress + "%");
-            testProgressBar.setProgress(progress);
+            testNo.setText("Test " +testModel.getTestId());
+            txtScore.setText(testModel.getTopScore() + "%");
+            testProgressBar.setProgress(testModel.getTopScore());
 
             itemView.setOnClickListener(view -> {
                 DbQuery.g_selected_test_index = getAdapterPosition(); // Lấy vị trí hợp lệ

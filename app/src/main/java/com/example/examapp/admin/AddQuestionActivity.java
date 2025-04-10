@@ -3,25 +3,15 @@ package com.example.examapp.admin;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.examapp.R;
-import com.example.examapp.database.DbQuery;
-import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.databinding.ActivityAddQuestionBinding;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class AddQuestionActivity extends AppCompatActivity {
 
@@ -29,21 +19,40 @@ public class AddQuestionActivity extends AppCompatActivity {
     private EditText edtQuestion, edtOptionA, edtOptionB, edtOptionC, edtOptionD;
     private RadioGroup radioGroup;
     private Button btnAddQuestion;
+    private ActivityAddQuestionBinding binding;
 
     private FirebaseFirestore db;
+
     private List<String> categoryList = new ArrayList<>();
     private List<String> testList = new ArrayList<>();
     private Map<String, String> categoryMap = new HashMap<>();
     private Map<String, String> testMap = new HashMap<>();
 
+    private String selectedCategoryId = "";
+    private String selectedTestId = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_question);
+
+        binding = ActivityAddQuestionBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+
+
+        setSupportActionBar(binding.toolbar1);
+        getSupportActionBar().setDisplayShowTitleEnabled(true);
+        getSupportActionBar().setTitle("Add Test");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         db = FirebaseFirestore.getInstance();
+        initViews();
+        loadCategories();
 
-        // Ánh xạ View
+        btnAddQuestion.setOnClickListener(view -> addQuestion());
+    }
+
+    private void initViews() {
         spinnerCategory = findViewById(R.id.spinner_category);
         spinnerTest = findViewById(R.id.spinner_test);
         edtQuestion = findViewById(R.id.edt_question);
@@ -53,83 +62,60 @@ public class AddQuestionActivity extends AppCompatActivity {
         edtOptionD = findViewById(R.id.edt_optionD);
         radioGroup = findViewById(R.id.radio_group);
         btnAddQuestion = findViewById(R.id.btn_add_question);
-
-        // Load danh mục và bài kiểm tra
-        loadCategories();
-
-        // Xử lý khi nhấn nút "Thêm Câu Hỏi"
-        btnAddQuestion.setOnClickListener(view -> addQuestion());
     }
 
     private void loadCategories() {
-        DbQuery.g_firestore.collection("QUIZ").get().addOnSuccessListener(queryDocumentSnapshots -> {
+        db.collection("QUIZ").get().addOnSuccessListener(querySnapshot -> {
             categoryList.clear();
             categoryMap.clear();
 
-            for (var doc : queryDocumentSnapshots) {
-                String catName = doc.getString("NAME");
-                String catId = doc.getId();
-
-                if (catName != null && catId != null) { // Kiểm tra null trước khi thêm vào danh sách
-                    categoryList.add(catName);
-                    categoryMap.put(catName, catId);
+            for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                String name = doc.getString("NAME");
+                String id = doc.getId();
+                if (name != null && id != null) {
+                    categoryList.add(name);
+                    categoryMap.put(name, id);
                 }
             }
 
             if (categoryList.isEmpty()) {
-                categoryList.add("Không có danh mục"); // Tránh lỗi khi danh sách rỗng
+                categoryList.add("Không có danh mục");
             }
 
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, categoryList);
             spinnerCategory.setAdapter(adapter);
 
             spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    String selectedCategoryId = categoryMap.get(categoryList.get(position));
-                    if (selectedCategoryId != null) {
-                        loadTests(selectedCategoryId);
-                    }
+                @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    String selectedCatName = categoryList.get(position);
+                    selectedCategoryId = categoryMap.get(selectedCatName);
+                    if (selectedCategoryId != null) loadTests(selectedCategoryId);
                 }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-                    // Không làm gì nếu không chọn mục nào
-                }
+                @Override public void onNothingSelected(AdapterView<?> parent) {}
             });
+
         }).addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải danh mục", Toast.LENGTH_SHORT).show());
     }
 
     private void loadTests(String categoryId) {
-        DbQuery.g_firestore.collection("QUIZ").document(categoryId)
+        db.collection("QUIZ").document(categoryId)
                 .collection("TEST_LIST").document("TEST_INFO")
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
+                .addOnSuccessListener(snapshot -> {
                     testList.clear();
                     testMap.clear();
 
-                    if (documentSnapshot.exists()) {
-                        Map<String, Object> data = documentSnapshot.getData(); // Kiểm tra dữ liệu
-                        Log.d("FirestoreData", "Dữ liệu TEST_INFO: " + data);
-
-                        for (int i = 1; i <= 3; i++) {
-                            String testIdKey = "TEST" + i + "_ID";
-                            String testTimeKey = "TEST" + i + "_TIME";
-
-                            if (documentSnapshot.contains(testIdKey) && documentSnapshot.contains(testTimeKey)) {
-                                String testId = documentSnapshot.getString(testIdKey);
-                                Long testTime = documentSnapshot.getLong(testTimeKey);
-
-                                if (testId != null && testTime != null) {
-                                    testList.add(testId);
-                                    testMap.put(testId, testId);
+                    if (snapshot.exists() && snapshot.contains("TESTs")) {
+                        List<Map<String, Object>> tests = (List<Map<String, Object>>) snapshot.get("TESTs");
+                        if (tests != null) {
+                            for (Map<String, Object> test : tests) {
+                                String id = (String) test.get("id");
+                                if (id != null) {
+                                    testList.add(id);
+                                    testMap.put(id, id);  // Có thể cập nhật để liên kết ID khác nếu cần
                                 }
-                            } else {
-                                Log.e("FirestoreError", "Không tìm thấy trường: " + testIdKey);
                             }
                         }
-                    } else {
-                        Log.e("FirestoreError", "Không tìm thấy tài liệu TEST_INFO");
                     }
 
                     if (testList.isEmpty()) {
@@ -138,16 +124,18 @@ public class AddQuestionActivity extends AppCompatActivity {
 
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, testList);
                     spinnerTest.setAdapter(adapter);
-                })
-                .addOnFailureListener(e -> Log.e("FirestoreError", "Lỗi tải bài kiểm tra", e));
+
+                    spinnerTest.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            selectedTestId = testList.get(position);
+                        }
+                        @Override public void onNothingSelected(AdapterView<?> parent) {}
+                    });
+
+                }).addOnFailureListener(e -> Log.e("FirestoreError", "Lỗi tải TESTs", e));
     }
 
-
-
     private void addQuestion() {
-        String selectedCategory = categoryMap.get(spinnerCategory.getSelectedItem().toString());
-        String selectedTest = testMap.get(spinnerTest.getSelectedItem().toString());
-
         String question = edtQuestion.getText().toString().trim();
         String optionA = edtOptionA.getText().toString().trim();
         String optionB = edtOptionB.getText().toString().trim();
@@ -156,19 +144,10 @@ public class AddQuestionActivity extends AppCompatActivity {
 
         int selectedAnswer = -1;
         int checkedId = radioGroup.getCheckedRadioButtonId();
-        if (checkedId != -1) {
-            RadioButton selectedRadioButton = findViewById(checkedId);
-            if (checkedId == R.id.radio_A) {
-                selectedAnswer = 1;
-            } else if (checkedId == R.id.radio_B) {
-                selectedAnswer = 2;
-            } else if (checkedId == R.id.radio_C) {
-                selectedAnswer = 3;
-            } else if (checkedId == R.id.radio_D) {
-                selectedAnswer = 4;
-            }
-
-        }
+        if (checkedId == R.id.radio_A) selectedAnswer = 1;
+        else if (checkedId == R.id.radio_B) selectedAnswer = 2;
+        else if (checkedId == R.id.radio_C) selectedAnswer = 3;
+        else if (checkedId == R.id.radio_D) selectedAnswer = 4;
 
         if (question.isEmpty() || optionA.isEmpty() || optionB.isEmpty() || optionC.isEmpty() || optionD.isEmpty() || selectedAnswer == -1) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
@@ -182,23 +161,25 @@ public class AddQuestionActivity extends AppCompatActivity {
         questionData.put("C", optionC);
         questionData.put("D", optionD);
         questionData.put("ANSWER", selectedAnswer);
-        questionData.put("CATEGORY", selectedCategory);
-        questionData.put("TEST", selectedTest);
+        questionData.put("CATEGORY", selectedCategoryId);
+        questionData.put("TEST", selectedTestId);
 
-        db.collection("Question").add(questionData).addOnSuccessListener(documentReference -> {
-            Toast.makeText(this, "Thêm câu hỏi thành công!", Toast.LENGTH_SHORT).show();
-            // Làm trống các ô nhập liệu
-            edtQuestion.setText("");
-            edtOptionA.setText("");
-            edtOptionB.setText("");
-            edtOptionC.setText("");
-            edtOptionD.setText("");
+        db.collection("Question").add(questionData)
+                .addOnSuccessListener(ref -> {
+                    Toast.makeText(this, "Thêm câu hỏi thành công!", Toast.LENGTH_SHORT).show();
+                    edtQuestion.setText("");
+                    edtOptionA.setText("");
+                    edtOptionB.setText("");
+                    edtOptionC.setText("");
+                    edtOptionD.setText("");
+                    radioGroup.clearCheck();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi khi thêm câu hỏi!", Toast.LENGTH_SHORT).show());
+    }
 
-            // Bỏ chọn RadioGroup
-            radioGroup.clearCheck();
-
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, "Lỗi khi thêm câu hỏi!", Toast.LENGTH_SHORT).show()
-        );
+    @Override
+    public boolean onSupportNavigateUp() {
+        finish();
+        return true;
     }
 }
