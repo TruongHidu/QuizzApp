@@ -43,7 +43,7 @@ public class DbQuery {
     public static final int ANSWERED = 2;
     public static final int HIGHTLIGHTED = 3;
     public static boolean isMeOnTopList = false;
-    static int tmp;
+//    static int tmp;
 
     public static ProfileModel myProfile = new ProfileModel("NA", null, null, 0);
     public static void initFirestore() {
@@ -149,20 +149,18 @@ public class DbQuery {
 
     public static void loadBookMarks(MyCompleteListener listener){
         g_bookmarkList.clear();
-        tmp = 0;
+        AtomicInteger tmp = new AtomicInteger(0); // Dùng biến cục bộ
 
-        if(g_bookmarkList.size() == 0){
+        if (g_bmIdList.size() == 0) {
             listener.onSuccess();
+            return;
         }
 
-        for(int i = 0; i <g_bmIdList.size(); i++){
-
-            String docID = g_bmIdList.get(i);
-
+        for (String docID : g_bmIdList) {
             g_firestore.collection("Question").document(docID)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
-                        if(documentSnapshot.exists()){
+                        if (documentSnapshot.exists()) {
                             g_bookmarkList.add(new QuestionModel(
                                     documentSnapshot.getId(),
                                     documentSnapshot.getString("QUESTION"),
@@ -176,21 +174,15 @@ public class DbQuery {
                                     false
                             ));
                         }
-                        tmp++;
 
-                        if(tmp == g_bmIdList.size()){
+                        if (tmp.incrementAndGet() == g_bmIdList.size()) {
                             listener.onSuccess();
                         }
-
                     })
-                    .addOnFailureListener(runnable -> {
-                        listener.onFailture();
-
-                    });
-
+                    .addOnFailureListener(e -> listener.onFailture());
         }
-
     }
+
 
     public static void getTopUsers(MyCompleteListener listener){
         g_userList.clear();

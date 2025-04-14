@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="20:15 min"
-            android:textColor="@color/green"
+            android:textColor="@color/white"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -45,6 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:layout_weight="1"
+            android:textSize="16sp"
             android:background="@drawable/button_border"
             android:backgroundTint="@color/orangeLight"
             android:text="Submit"
@@ -55,7 +56,7 @@
         android:id="@+id/ln3"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimaryDark"
+        android:background="@color/colorPrimary"
         android:orientation="horizontal"
         android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"

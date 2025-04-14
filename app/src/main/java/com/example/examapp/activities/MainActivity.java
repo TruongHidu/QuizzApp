@@ -110,10 +110,13 @@ public class MainActivity extends AppCompatActivity {
 
             if (id == R.id.nav_profile) {
                 selectedFragment = new AccountFragment();
+                binding.bottomNavBar.setSelectedItemId(R.id.nav_account);
             } else if (id == R.id.nav_home) {
                 selectedFragment = new CategoryFragment();
+                binding.bottomNavBar.setSelectedItemId(R.id.nav_home);
             } else if (id == R.id.nav_leaderboard) {
                 selectedFragment = new LeaderBoardFragment();
+                binding.bottomNavBar.setSelectedItemId(R.id.nav_leaderboard);
             } else if (id == R.id.nav_logout) {
                 FirebaseAuth.getInstance().signOut();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);

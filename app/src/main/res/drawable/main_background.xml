@@ -13,7 +13,9 @@
 
         >
         <shape android:shape="oval">
-            <solid android:color="@color/colorPrimary"/>
+            <gradient android:startColor="#2788e7"
+                android:endColor="#00bcd4"
+                android:angle="0"/>
         </shape>
     </item>
 </layer-list>

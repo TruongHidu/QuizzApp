@@ -53,21 +53,21 @@ public class LeaderBoardFragment extends Fragment {
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         binding.rcvRank.setLayoutManager(layoutManager);
 
-        adapter = new RankAdapter(g_userList);
-        binding.rcvRank.setAdapter(adapter);
-
         DbQuery.getTopUsers(new MyCompleteListener() {
             @Override
             public void onSuccess() {
-                adapter.notifyDataSetChanged();
-                if(DbQuery.myPerformanece.getScore() != 0){
+                adapter = new RankAdapter(g_userList);
+                binding.rcvRank.setAdapter(adapter);
 
+                if(DbQuery.myPerformanece.getScore() != 0){
                     if(DbQuery.isMeOnTopList){
                         caculateRank();
                     }
                     binding.txtTotalScore.setText("Score: " + DbQuery.myPerformanece.getScore());
                     binding.txtRank.setText("Rank - " + DbQuery.myPerformanece.getRank());
                 }
+
+                binding.txtTotalUsers.setText("Total users: " + DbQuery.g_userCount);
                 progressDialog.dismiss();
             }
 
@@ -75,9 +75,9 @@ public class LeaderBoardFragment extends Fragment {
             public void onFailture() {
                 progressDialog.dismiss();
                 Toast.makeText(getContext(), "Something went wrong", Toast.LENGTH_SHORT).show();
-
             }
         });
+
 
         binding.txtTotalUsers.setText("Total users: " + DbQuery.g_userCount);
 

@@ -24,6 +24,7 @@ import com.example.examapp.activities.MyProfileActivity;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.FragmentAccountBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
 
@@ -58,6 +59,21 @@ public class AccountFragment extends Fragment {
             startActivity(intent);
 
         });
+
+        binding.btnLeaderboard.setOnClickListener(v -> {
+            // Mở LeaderBoardFragment
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new LeaderBoardFragment())
+                    .addToBackStack(null) // cho phép quay lại bằng nút back
+                    .commit();
+
+            // Nếu bạn muốn cập nhật cả bottom navigation bar (nếu có)
+            BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_bar);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.nav_leaderboard);
+            }
+        });
+
 
 
       if(DbQuery.g_userList.size() == 0){
