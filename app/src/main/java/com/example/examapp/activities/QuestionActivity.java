@@ -144,7 +144,9 @@ public class QuestionActivity extends AppCompatActivity {
             }
         });
         btnNext.setOnClickListener(view -> {
-            if (questionId < DbQuery.g_questionList.size() - 1) {
+            if (questionId == DbQuery.g_questionList.size() - 1) {
+                submitTest();
+            } else {
                 questionId++;
                 rcvQuestion.smoothScrollToPosition(questionId);
             }
