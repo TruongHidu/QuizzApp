@@ -52,27 +52,31 @@ public class DbQuery {
         }
     }
 
+
+    private static void ensureFirestoreInitialized() {
+        if (g_firestore == null) {
+            g_firestore = FirebaseFirestore.getInstance();
+        }
+    }
+
     public static void getUserData(MyCompleteListener listener) {
+        ensureFirestoreInitialized();
         g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getUid())
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     myProfile.setName(documentSnapshot.getString("NAME"));
                     myProfile.setEmail(documentSnapshot.getString("EMAIL_ID"));
-                    if(documentSnapshot.getString("PHONE") != null) {
+                    if (documentSnapshot.getString("PHONE") != null) {
                         myProfile.setPhone(documentSnapshot.getString("PHONE"));
                     }
-                    if(documentSnapshot.getLong("BOOKMARKS") != null) {
-                    myProfile.setBookmarkCount(documentSnapshot.getLong("BOOKMARKS").intValue());
+                    if (documentSnapshot.getLong("BOOKMARKS") != null) {
+                        myProfile.setBookmarkCount(documentSnapshot.getLong("BOOKMARKS").intValue());
                     }
-
                     myPerformanece.setScore(documentSnapshot.getLong("TOTAL_SCORE").intValue());
                     myPerformanece.setName(documentSnapshot.getString("NAME"));
-
                     listener.onSuccess();
-
-                }).addOnFailureListener(e -> {
-                    listener.onFailture();
-                });
+                })
+                .addOnFailureListener(e -> listener.onFailture());
     }
     public static void saveUserData(String name, String phone, MyCompleteListener listener) {
         Map<String, Object> profileData  =new ArrayMap<>();
@@ -184,37 +188,33 @@ public class DbQuery {
     }
 
 
-    public static void getTopUsers(MyCompleteListener listener){
-        g_userList.clear();
-        String myUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    public static void getTopUsers(MyCompleteListener listener) {
+        ensureFirestoreInitialized();
         g_firestore.collection("USERS")
                 .whereGreaterThan("TOTAL_SCORE", 0)
                 .orderBy("TOTAL_SCORE", Query.Direction.DESCENDING)
-                .limit(100)
+                .limit(20)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    g_userList.clear();
+                    isMeOnTopList = false;
                     int rank = 1;
-                    for(QueryDocumentSnapshot doc : queryDocumentSnapshots){
-                        g_userList.add(new RankModel(doc.getLong("TOTAL_SCORE").intValue(),
+                    String myUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        g_userList.add(new RankModel(
+                                doc.getLong("TOTAL_SCORE").intValue(),
                                 rank,
-                                doc.getString("NAME")));
-
-                        if(myUID.compareTo(doc.getId()) == 0){
+                                doc.getString("NAME")
+                        ));
+                        if (myUID.compareTo(doc.getId()) == 0) {
                             isMeOnTopList = true;
                             myPerformanece.setRank(rank);
                         }
-
                         rank++;
                     }
                     listener.onSuccess();
-
                 })
-                .addOnFailureListener(runnable -> {
-                    listener.onFailture();
-
-                });
-
-
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
     public static void getUsersCount(MyCompleteListener listener){
@@ -231,32 +231,26 @@ public class DbQuery {
     }
 
     public static void loadCategories(MyCompleteListener listener) {
-        g_categoryList.clear();
+        ensureFirestoreInitialized();
         g_firestore.collection("QUIZ").get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    g_categoryList.clear();
                     Map<String, QueryDocumentSnapshot> docList = new ArrayMap<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         docList.put(doc.getId(), doc);
-
                     }
-
                     QueryDocumentSnapshot catListDoc = docList.get("Categories");
-
                     long catCount = catListDoc.getLong("COUNT");
                     for (int i = 1; i <= catCount; i++) {
                         String catID = catListDoc.getString("CAT" + i + "_ID");
                         QueryDocumentSnapshot catDoc = docList.get(catID);
-
                         int noOfTest = catDoc.getLong("NO_OF_TEST").intValue();
                         String catName = catDoc.getString("NAME");
                         g_categoryList.add(new CategoryModel(catID, catName, noOfTest));
-
                     }
                     listener.onSuccess();
-
-                }).addOnFailureListener(e -> {
-                    listener.onFailture();
-                });
+                })
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
     public static void loadTestData(MyCompleteListener listener) {
@@ -393,25 +387,49 @@ public class DbQuery {
                 });
 
     }
-    public static void loadMyScore(MyCompleteListener listener){
-        g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .collection("USER_DATA").document("MY_SCORES")
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    for(int i = 0 ; i < g_testList.size(); i++){
-                        int top = 0;
-                        if(documentSnapshot.get(g_testList.get(i).getTestId()) != null){
-                            top = documentSnapshot.getLong(g_testList.get(i).getTestId()).intValue();
+    public static void loadMyScore(MyCompleteListener listener) {
+        ensureFirestoreInitialized();
+        DocumentReference scoreDoc = g_firestore.collection("USERS")
+                .document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .collection("USER_DATA").document("MY_SCORES");
 
-                        }
-                        g_testList.get(i).setTopScore(top);
+        scoreDoc.get().addOnSuccessListener(documentSnapshot -> {
+            if (!documentSnapshot.exists()) {
+                // Document doesn't exist, initialize with 0 scores
+                for (int i = 0; i < g_testList.size(); i++) {
+                    g_testList.get(i).setTopScore(0);
+                }
+                listener.onSuccess();
+                return;
+            }
 
+            Map<String, Object> allScores = documentSnapshot.getData();
+            if (allScores == null) {
+                allScores = new HashMap<>();
+            }
+
+            for (int i = 0; i < g_testList.size(); i++) {
+                String testId = g_testList.get(i).getTestId();
+                int topScore = 0;
+                if (allScores.containsKey(testId)) {
+                    Object value = allScores.get(testId);
+                    if (value instanceof Long) {
+                        topScore = ((Long) value).intValue();
+                    } else if (value instanceof Integer) {
+                        topScore = (Integer) value;
                     }
-                    listener.onSuccess();
-                })
-                .addOnFailureListener(e -> {
-                    listener.onFailture();
-                });
+                    System.out.println("Loaded score for " + testId + ": " + topScore); // Debug log
+                }
+                g_testList.get(i).setTopScore(topScore);
+            }
+            listener.onSuccess();
+        }).addOnFailureListener(e -> {
+            System.err.println("Failed to load scores: " + e.getMessage());
+            for (int i = 0; i < g_testList.size(); i++) {
+                g_testList.get(i).setTopScore(0);
+            }
+            listener.onFailture();
+        });
     }
     public static void saveResult(int score, MyCompleteListener listener) {
         DocumentReference userDoc = g_firestore.collection("USERS")

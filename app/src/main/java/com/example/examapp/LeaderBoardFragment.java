@@ -1,44 +1,40 @@
 package com.example.examapp;
 
-import static com.example.examapp.database.DbQuery.g_userCount;
-import static com.example.examapp.database.DbQuery.g_userList;
-import static com.example.examapp.database.DbQuery.myPerformanece;
-
 import android.app.Dialog;
 import android.os.Bundle;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.examapp.activities.ScoreActivity;
-import com.example.examapp.adapter.RankAdapter;
-import com.example.examapp.database.DbQuery;
-import com.example.examapp.databinding.FragmentLeaderBoardBinding;
-import com.example.examapp.handlerlistener.MyCompleteListener;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.examapp.adapter.RankAdapter;
+import com.example.examapp.databinding.FragmentLeaderBoardBinding;
+import com.example.examapp.model.RankModel;
+import com.example.examapp.viewmodel.LeaderBoardViewModel;
+
+import java.util.ArrayList;
 
 public class LeaderBoardFragment extends Fragment {
-    FragmentLeaderBoardBinding binding;
-    private RankAdapter adapter;
+    private FragmentLeaderBoardBinding binding;
+    private LeaderBoardViewModel viewModel;
     private Dialog progressDialog;
     private TextView dialogText;
+    private RankAdapter adapter;
+
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentLeaderBoardBinding.inflate(inflater, container, false);
-
+        viewModel = new ViewModelProvider(this).get(LeaderBoardViewModel.class);
         ((AppCompatActivity) requireActivity()).getSupportActionBar().setTitle("Leaderboard");
 
-
+        // Initialize progress dialog
         progressDialog = new Dialog(getContext());
         progressDialog.setContentView(R.layout.dialog_layout);
         progressDialog.setCancelable(false);
@@ -47,60 +43,61 @@ public class LeaderBoardFragment extends Fragment {
         dialogText.setText("Loading ...");
         progressDialog.show();
 
-
-
+        // Set up RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         binding.rcvRank.setLayoutManager(layoutManager);
+        adapter = new RankAdapter(new ArrayList<>());
+        binding.rcvRank.setAdapter(adapter);
 
-        DbQuery.getTopUsers(new MyCompleteListener() {
-            @Override
-            public void onSuccess() {
-                adapter = new RankAdapter(g_userList);
-                binding.rcvRank.setAdapter(adapter);
-
-                if(DbQuery.myPerformanece.getScore() != 0){
-                    if(DbQuery.isMeOnTopList){
-                        caculateRank();
-                    }
-                    binding.txtTotalScore.setText("Score: " + DbQuery.myPerformanece.getScore());
-                    binding.txtRank.setText("Rank - " + DbQuery.myPerformanece.getRank());
-                }
-
-                binding.txtTotalUsers.setText("Total users: " + DbQuery.g_userCount);
-                progressDialog.dismiss();
-            }
-
-            @Override
-            public void onFailture() {
-                progressDialog.dismiss();
-                Toast.makeText(getContext(), "Something went wrong", Toast.LENGTH_SHORT).show();
+        // Observe ViewModel data
+        viewModel.getTopUsers().observe(getViewLifecycleOwner(), topUsers -> {
+            progressDialog.dismiss();
+            if (topUsers != null) {
+                adapter.updateData(topUsers); // Update existing adapter
+                binding.rcvRank.setVisibility(topUsers.isEmpty() ? View.GONE : View.VISIBLE);
+                binding.emptyView.setVisibility(topUsers.isEmpty() ? View.VISIBLE : View.GONE);
             }
         });
 
+        viewModel.getUserPerformance().observe(getViewLifecycleOwner(), performance -> {
+            progressDialog.dismiss();
+            if (performance != null && performance.getScore() != 0) {
 
-        binding.txtTotalUsers.setText("Total users: " + DbQuery.g_userCount);
+                binding.txtTotalScore.setText("Score: " + performance.getScore());
+                binding.txtRank.setText("Rank - " + (performance.getRank() > 0 ? performance.getRank() : "NA"));
+            }
+        });
 
+        viewModel.getUserCount().observe(getViewLifecycleOwner(), count -> {
+            if (count != null) {
+                binding.txtTotalUsers.setText("Total users: " + count);
+            }
+        });
 
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
+            progressDialog.dismiss();
+            if (error != null) {
+                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Load data
+        viewModel.loadLeaderboardData();
 
         return binding.getRoot();
     }
 
-    private void caculateRank() {
-        if (g_userList.isEmpty()) {
-            myPerformanece.setRank(1); // Nếu danh sách rỗng, đặt rank là 1
-            return;
-        }
-
-        int rank = 1; // Rank bắt đầu từ 1
-        for (int i = 0; i < g_userList.size(); i++) {
-            if (myPerformanece.getScore() < g_userList.get(i).getScore()) {
-                rank++; // Nếu có người điểm cao hơn, tăng rank
-            }
-        }
-
-        myPerformanece.setRank(rank);
+    @Override
+    public void onStop() {
+        super.onStop();
+        progressDialog.dismiss(); // Dismiss dialog when fragment is stopped
     }
 
-
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+        adapter = null;
+    }
 }

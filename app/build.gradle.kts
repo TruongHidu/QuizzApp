@@ -18,6 +18,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        dataBinding = true
     }
 
     buildTypes {
@@ -52,5 +53,9 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
+
+
+    implementation ("androidx.lifecycle:lifecycle-viewmodel:2.6.2")
+    implementation ("androidx.lifecycle:lifecycle-livedata:2.6.2")
 }
 

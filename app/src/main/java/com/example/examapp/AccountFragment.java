@@ -1,73 +1,77 @@
 package com.example.examapp;
 
-import static com.example.examapp.database.DbQuery.g_userCount;
-import static com.example.examapp.database.DbQuery.g_userList;
-import static com.example.examapp.database.DbQuery.myPerformanece;
-
-import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.examapp.activities.BookMarkActivity;
 import com.example.examapp.activities.LoginActivity;
 import com.example.examapp.activities.MyProfileActivity;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.FragmentAccountBinding;
-import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.viewmodel.AccountViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
-
 public class AccountFragment extends Fragment {
-
-
     private FragmentAccountBinding binding;
-    private Dialog progressDialog;
-    private TextView dialogText;
+    private AccountViewModel viewModel;
+    private ProgressDialogUtil progressDialogUtil;
+
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentAccountBinding.inflate(inflater, container, false);
+        viewModel = new ViewModelProvider(this).get(AccountViewModel.class);
         ((AppCompatActivity) requireActivity()).getSupportActionBar().setTitle("My Account");
 
+        // Initialize progress dialog
+        progressDialogUtil = new ProgressDialogUtil(getContext());
+        progressDialogUtil.show("Loading ...");
 
-
-        progressDialog = new Dialog(getContext());
-        progressDialog.setContentView(R.layout.dialog_layout);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dialogText = progressDialog.findViewById(R.id.txtDialog);
-        dialogText.setText("Loading ...");
-
-
+        // Set initial profile data
         binding.txtName.setText(DbQuery.myProfile.getName());
-        binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
-        binding.imgName.setText(DbQuery.myProfile.getName().toUpperCase().substring(0, 1));
+        binding.imgName.setText(DbQuery.myProfile.getName() != null && !DbQuery.myProfile.getName().isEmpty() ?
+                DbQuery.myProfile.getName().toUpperCase().substring(0, 1) : "N");
 
-        binding.btnBookMarkQuestion.setOnClickListener(view -> {
-            Intent intent = new Intent(getActivity(), BookMarkActivity.class);
-            startActivity(intent);
+        // Observe ViewModel data
+        viewModel.getUserPerformance().observe(getViewLifecycleOwner(), performance -> {
+            progressDialogUtil.dismiss();
+            if (performance != null) {
+                binding.txtOverRollScore.setText(String.valueOf(performance.getScore()));
+                binding.txtRank.setText(performance.getRank() > 0 ? String.valueOf(performance.getRank()) : "NA");
+            }
+        });
 
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
+            progressDialogUtil.dismiss();
+            if (error != null) {
+                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Load data
+        viewModel.loadAccountData();
+
+        // Set up click listeners
+        binding.btnBookMarkQuestion.setOnClickListener(v -> {
+            progressDialogUtil.dismiss();
+            startActivity(new Intent(getContext(), BookMarkActivity.class));
         });
 
         binding.btnLeaderboard.setOnClickListener(v -> {
-            // Mở LeaderBoardFragment
+            progressDialogUtil.dismiss();
             requireActivity().getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new LeaderBoardFragment())
-                    .addToBackStack(null) // cho phép quay lại bằng nút back
+                    .addToBackStack(null)
                     .commit();
-
-            // Nếu bạn muốn cập nhật cả bottom navigation bar (nếu có)
             BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_bar);
             if (bottomNav != null) {
                 bottomNav.setSelectedItemId(R.id.nav_leaderboard);
@@ -75,108 +79,33 @@ public class AccountFragment extends Fragment {
         });
 
 
-
-      if(DbQuery.g_userList.size() == 0){
-          progressDialog.show();
-          DbQuery.getTopUsers(new MyCompleteListener() {
-              @Override
-              public void onSuccess() {
-                  if(DbQuery.myPerformanece.getScore() != 0){
-
-                      if(DbQuery.isMeOnTopList){
-                          caculateRank();
-                      }
-                      binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
-                      binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
-
-
-                  }
-                  progressDialog.dismiss();
-              }
-
-              @Override
-              public void onFailture() {
-                  progressDialog.dismiss();
-                  Toast.makeText(getContext(), "Something went wrong", Toast.LENGTH_SHORT).show();
-
-              }
-          });
-      }else {
-          binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
-          if(myPerformanece.getScore() != 0)
-              binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
-
-      }
-
-
-        binding.btnLogout.setOnClickListener(view -> {
-            FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            startActivity(intent);
-            getActivity().finish();
+        binding.btnProfile.setOnClickListener(v -> {
+            progressDialogUtil.dismiss();
+            startActivity(new Intent(getContext(), MyProfileActivity.class));
         });
 
-        binding.btnProfile.setOnClickListener(view -> {
-            Intent intent = new Intent(getActivity(), MyProfileActivity.class);
-            startActivity(intent);
-
+        binding.btnLogout.setOnClickListener(v -> {
+            progressDialogUtil.dismiss();
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(getContext(), LoginActivity.class));
+            requireActivity().finish();
         });
 
         return binding.getRoot();
     }
-    private void caculateRank() {
-        if (g_userList.isEmpty()) {
-            myPerformanece.setRank(1); // Nếu danh sách rỗng, đặt rank là 1
-            return;
-        }
 
-        int rank = 1; // Rank bắt đầu từ 1
-        for (int i = 0; i < g_userList.size(); i++) {
-            if (myPerformanece.getScore() < g_userList.get(i).getScore()) {
-                rank++; // Nếu có người điểm cao hơn, tăng rank
-            }
-        }
-
-        myPerformanece.setRank(rank);
-    }
-
-    private void updateUserInfo() {
-        binding.txtName.setText(DbQuery.myProfile.getName());
-        binding.imgName.setText(DbQuery.myProfile.getName().toUpperCase().substring(0, 1));
-        binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
-
-        if (DbQuery.g_userList.size() == 0) {
-            progressDialog.show();
-            DbQuery.getTopUsers(new MyCompleteListener() {
-                @Override
-                public void onSuccess() {
-                    if (DbQuery.myPerformanece.getScore() != 0) {
-                        if (DbQuery.isMeOnTopList) {
-                            caculateRank();
-                        }
-                        binding.txtOverRollScore.setText(String.valueOf(DbQuery.myPerformanece.getScore()));
-                        binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
-                    }
-                    progressDialog.dismiss();
-                }
-
-                @Override
-                public void onFailture() {
-                    progressDialog.dismiss();
-                    Toast.makeText(getContext(), "Something went wrong", Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            if (DbQuery.myPerformanece.getScore() != 0) {
-                binding.txtRank.setText(String.valueOf(DbQuery.myPerformanece.getRank()));
-            }
-        }
-    }
     @Override
     public void onResume() {
         super.onResume();
-        updateUserInfo();
+        binding.txtName.setText(DbQuery.myProfile.getName());
+        binding.imgName.setText(DbQuery.myProfile.getName() != null && !DbQuery.myProfile.getName().isEmpty() ?
+                DbQuery.myProfile.getName().toUpperCase().substring(0, 1) : "N");
     }
 
-
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        progressDialogUtil.dismiss();
+        binding = null;
+    }
 }

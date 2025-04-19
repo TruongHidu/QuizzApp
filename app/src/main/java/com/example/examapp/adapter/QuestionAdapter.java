@@ -1,11 +1,8 @@
 package com.example.examapp.adapter;
 
 import static com.example.examapp.database.DbQuery.ANSWERED;
-import static com.example.examapp.database.DbQuery.HIGHTLIGHTED;
 import static com.example.examapp.database.DbQuery.UNANSWERED;
-import static com.example.examapp.database.DbQuery.g_questionList;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,18 +12,23 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.QuestionItemLayoutBinding;
 import com.example.examapp.model.QuestionModel;
 
 import java.util.List;
 
 public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHolder> {
-    private List<QuestionModel> questionList;
-    private Button btnPreSelected = null;
+    private final List<QuestionModel> questionList;
+    private final OnOptionSelectedListener optionSelectedListener;
 
-    public QuestionAdapter(List<QuestionModel> questionList) {
+    public interface OnOptionSelectedListener {
+        void onOptionSelected(int position, int selectedOption);
+        void onOptionCleared(int position);
+    }
+
+    public QuestionAdapter(List<QuestionModel> questionList, OnOptionSelectedListener listener) {
         this.questionList = questionList;
+        this.optionSelectedListener = listener;
     }
 
     @NonNull
@@ -40,7 +42,7 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.setData(questionList.get(position));
+        holder.setData(questionList.get(position), position);
     }
 
     @Override
@@ -56,24 +58,21 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
             this.binding = binding;
         }
 
-        private void setData(QuestionModel question) {
+        private void setData(QuestionModel question, int position) {
             binding.txtQuestion.setText(question.getQuestion());
             binding.optionA.setText(question.getOptionA());
             binding.optionB.setText(question.getOptionB());
             binding.optionC.setText(question.getOptionC());
             binding.optionD.setText(question.getOptionD());
 
-            // Reset màu của tất cả nút trước khi đặt lại lựa chọn đã chọn
             resetButtonColors();
 
-            // Nếu đã có lựa chọn trước đó, hiển thị lại
             if (question.getSelectedOption() != -1) {
                 highlightSelectedOption(question.getSelectedOption());
             }
 
-            // Xử lý sự kiện chọn đáp án
             View.OnClickListener optionClickListener = view -> {
-                selectedOption((Button) view, question);
+                selectedOption((Button) view, question, position);
             };
 
             binding.optionA.setOnClickListener(optionClickListener);
@@ -82,7 +81,6 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
             binding.optionD.setOnClickListener(optionClickListener);
         }
 
-        // Hàm reset màu tất cả các nút về mặc định
         private void resetButtonColors() {
             binding.optionA.setBackgroundResource(R.drawable.unselected_button);
             binding.optionB.setBackgroundResource(R.drawable.unselected_button);
@@ -90,7 +88,6 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
             binding.optionD.setBackgroundResource(R.drawable.unselected_button);
         }
 
-        // Hàm hiển thị lại lựa chọn đã chọn
         private void highlightSelectedOption(int selectedOption) {
             switch (selectedOption) {
                 case 1:
@@ -108,34 +105,29 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
             }
         }
 
-        private void selectedOption(Button selectedBtn, QuestionModel question) {
-            // Nếu người dùng nhấn lại vào nút đã chọn trước đó -> Bỏ chọn
+        private void selectedOption(Button selectedBtn, QuestionModel question, int position) {
             if (question.getSelectedOption() != -1 && selectedBtn == getSelectedButton(question.getSelectedOption())) {
                 resetButtonColors();
-                question.setSelectedOption(-1);
-                question.setStatus(UNANSWERED);
+                optionSelectedListener.onOptionCleared(position);
                 return;
             }
 
-            // Nếu chọn một đáp án mới, cập nhật đáp án
             resetButtonColors();
             selectedBtn.setBackgroundResource(R.drawable.selectd_button);
 
+            int selectedOption = -1;
             if (selectedBtn == binding.optionA) {
-                question.setSelectedOption(1);
+                selectedOption = 1;
             } else if (selectedBtn == binding.optionB) {
-                question.setSelectedOption(2);
+                selectedOption = 2;
             } else if (selectedBtn == binding.optionC) {
-                question.setSelectedOption(3);
+                selectedOption = 3;
             } else if (selectedBtn == binding.optionD) {
-                question.setSelectedOption(4);
+                selectedOption = 4;
             }
-            question.setStatus(ANSWERED);
+            optionSelectedListener.onOptionSelected(position, selectedOption);
         }
 
-
-
-        // Hàm lấy nút đã chọn dựa trên `selectedOption`
         private Button getSelectedButton(int selectedOption) {
             switch (selectedOption) {
                 case 1: return binding.optionA;
@@ -145,7 +137,5 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
                 default: return null;
             }
         }
-
-
     }
 }
