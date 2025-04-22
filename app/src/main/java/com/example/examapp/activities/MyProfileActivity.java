@@ -1,28 +1,23 @@
 package com.example.examapp.activities;
 
-import android.app.Dialog;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.example.examapp.R;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityMyProfileBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.viewmodel.AuthViewModel;
 
 public class MyProfileActivity extends AppCompatActivity {
-    ActivityMyProfileBinding binding;
+    private ActivityMyProfileBinding binding;
+    private AuthViewModel viewModel;
+    private ProgressDialogUtil progressDialog;
     private String nameStr, phoneStr;
-    private Dialog progressDialog;
-    private TextView dialogText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,15 +25,8 @@ public class MyProfileActivity extends AppCompatActivity {
         binding = ActivityMyProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        progressDialog = new Dialog(MyProfileActivity.this);
-        progressDialog.setContentView(R.layout.dialog_layout);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        dialogText = progressDialog.findViewById(R.id.txtDialog);
-        dialogText.setText("Saving ...");
-
-
+        viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        progressDialog = new ProgressDialogUtil(this);
 
         setSupportActionBar(binding.toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
@@ -46,9 +34,12 @@ public class MyProfileActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         disableEditing();
-
         addEvent();
 
+        viewModel.getErrorMessage().observe(this, error -> {
+            progressDialog.dismiss();
+            Toast.makeText(MyProfileActivity.this, error, Toast.LENGTH_LONG).show();
+        });
     }
 
     private void disableEditing() {
@@ -61,7 +52,7 @@ public class MyProfileActivity extends AppCompatActivity {
 
         binding.txtProfileName.setText(DbQuery.myProfile.getName());
         binding.txtProfileEmail.setText(DbQuery.myProfile.getEmail());
-        if(DbQuery.myProfile.getPhone() != null) {
+        if (DbQuery.myProfile.getPhone() != null) {
             binding.txtProfilePhone.setText(DbQuery.myProfile.getPhone());
         }
         String profileName = DbQuery.myProfile.getName();
@@ -69,15 +60,15 @@ public class MyProfileActivity extends AppCompatActivity {
     }
 
     private void addEvent() {
-        binding.btnCancel.setOnClickListener(view -> {
-            disableEditing();
-
-        });
+        binding.btnCancel.setOnClickListener(view -> disableEditing());
 
         binding.btnEdit.setOnClickListener(view -> {
+            view.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100)
+                    .withEndAction(() -> view.animate().scaleX(1f).scaleY(1f).setDuration(100).start())
+                    .start();
             enableEditing();
-
         });
+
         binding.btnSave.setOnClickListener(view -> {
             if (validate()) {
                 saveData();
@@ -86,27 +77,23 @@ public class MyProfileActivity extends AppCompatActivity {
     }
 
     private void saveData() {
-        progressDialog.show();
-        if(phoneStr.isEmpty()){
+        progressDialog.show("Saving...");
+        if (phoneStr.isEmpty()) {
             phoneStr = null;
         }
-
-        DbQuery.saveUserData(nameStr, phoneStr, new MyCompleteListener(){
-                @Override
-                public void onSuccess() {
-                    Toast.makeText(MyProfileActivity.this, "Data saved successfully!", Toast.LENGTH_SHORT).show();
-                    progressDialog.dismiss();
-                    disableEditing();
-                }
-                @Override
-                public void onFailture() {
-                    Toast.makeText(MyProfileActivity.this, "Failed to save data!", Toast.LENGTH_SHORT).show();
-                    progressDialog.dismiss();
-                }
-            });
-
-
+        viewModel.saveUserData(nameStr, phoneStr, new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                progressDialog.dismiss();
+                Toast.makeText(MyProfileActivity.this, "Data saved successfully!", Toast.LENGTH_SHORT).show();
+                disableEditing();
             }
+            @Override
+            public void onFailture() {
+                // Lỗi được xử lý qua errorMessage LiveData
+            }
+        });
+    }
 
     private void enableEditing() {
         binding.txtProfileName.setEnabled(true);
@@ -117,28 +104,27 @@ public class MyProfileActivity extends AppCompatActivity {
     }
 
     private boolean validate() {
-        nameStr = binding.txtProfileName.getText().toString();
-        phoneStr = binding.txtProfilePhone.getText().toString();
-        if(nameStr.isEmpty()) {
+        nameStr = binding.txtProfileName.getText().toString().trim();
+        phoneStr = binding.txtProfilePhone.getText().toString().trim();
+        if (nameStr.isEmpty()) {
             binding.txtProfileName.setError("Please enter your name");
             return false;
         }
-        if( phoneStr.isEmpty()) {
-            binding.txtProfilePhone.setError("Please enter your phone");
-            return false;
-        }else{
-            if( !((phoneStr.length()) == 10) || (!phoneStr.matches("[0-9]+"))) {
+        if (!phoneStr.isEmpty()) {
+            if (phoneStr.length() != 10 || !phoneStr.matches("[0-9]+")) {
                 binding.txtProfilePhone.setError("Please enter a valid phone number");
                 return false;
             }
-
+        }else{
+            binding.txtProfilePhone.setError("Please enter your phone number");
+            return false;
         }
         return true;
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish(); // Đóng activity hiện tại để quay lại activity trước
+        finish();
         return true;
     }
 }

@@ -12,6 +12,8 @@ import com.example.examapp.model.TestModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
@@ -85,6 +87,36 @@ public class AuthRepository {
                     }
                 });
     }
+    public void signUp(String email, String password, String fullName, MyCompleteListener listener) {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DbQuery.createUserData(email, fullName, new MyCompleteListener() {
+                            @Override
+                            public void onSuccess() {
+                                listener.onSuccess();
+                            }
+                            @Override
+                            public void onFailture() {
+                                errorMessage.postValue("Failed to save user data");
+                                listener.onFailture();
+                            }
+                        });
+                    } else {
+                        Exception e = task.getException();
+                        if (e instanceof FirebaseAuthWeakPasswordException) {
+                            errorMessage.postValue("Password is too weak. Use at least 6 characters.");
+                        } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                            errorMessage.postValue("Invalid email format.");
+                        } else if (e instanceof FirebaseAuthUserCollisionException) {
+                            errorMessage.postValue("Email already exists.");
+                        } else {
+                            errorMessage.postValue("Sign-up failed: " + e.getMessage());
+                        }
+                        listener.onFailture();
+                    }
+                });
+    }
 
     public void loadData(MyCompleteListener listener) {
         DbQuery.loadData(new MyCompleteListener() {
@@ -96,6 +128,19 @@ public class AuthRepository {
             @Override
             public void onFailture() {
                 errorMessage.postValue("Something went wrong! Please try again later.");
+                listener.onFailture();
+            }
+        });
+    }
+    public void saveUserData(String name, String phone, MyCompleteListener listener) {
+        DbQuery.saveUserData(name, phone, new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess();
+            }
+            @Override
+            public void onFailture() {
+                errorMessage.postValue("Failed to save profile data. Please try again.");
                 listener.onFailture();
             }
         });
