@@ -112,7 +112,7 @@ public class MyProfileActivity extends AppCompatActivity {
         }
         if (!phoneStr.isEmpty()) {
             if (phoneStr.length() != 10 || !phoneStr.matches("[0-9]+")) {
-                binding.txtProfilePhone.setError("Please enter a valid phone number");
+                binding.txtProfilePhone.setError("Phone number must be 10 digits !");
                 return false;
             }
         }else{

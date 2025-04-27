@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Màu viền khi ô được focus -->
+    <item android:state_focused="true" android:color="@color/colorPrimary" />
+    <!-- Màu viền khi có lỗi -->
+    <item android:state_hovered="true" android:color="@color/red" />
+    <!-- Màu viền mặc định (không focus, không lỗi) -->
+    <item android:color="@color/gray_light" />
+</selector>

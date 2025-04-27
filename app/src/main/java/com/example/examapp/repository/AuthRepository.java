@@ -222,6 +222,34 @@ public class AuthRepository {
         });
     }
 
+    public void loadBmIds(MyCompleteListener listener) {
+        DbQuery.loadBmIds(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess();
+            }
+            @Override
+            public void onFailture() {
+                errorMessage.postValue("Failed to load bookmark IDs");
+                listener.onFailture();
+            }
+        });
+    }
+
+    public void loadBookMarks(MyCompleteListener listener) {
+        DbQuery.loadBookMarks(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess();
+            }
+            @Override
+            public void onFailture() {
+                errorMessage.postValue("Failed to load bookmarks");
+                listener.onFailture();
+            }
+        });
+    }
+
     public List<TestModel> getCurrentTestList() {
         return DbQuery.g_testList;
     }

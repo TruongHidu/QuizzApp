@@ -17,4 +17,7 @@
     <color name="purple">#9C27B0</color>
     <color name="gray_light">#E0E0E0</color>
     <color name="gray_dark">#616161</color>
+    <color name="blueQuestion">#3075BB</color>
+    <color name="pinkQuestion">#F50057</color>
+
 </resources>

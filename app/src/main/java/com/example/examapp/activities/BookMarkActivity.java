@@ -9,22 +9,19 @@ import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
-import com.example.examapp.adapter.AnswerAdapter;
 import com.example.examapp.adapter.BookMarkAdapter;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityBookMarkBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.viewmodel.BookMarkViewModel;
 
 public class BookMarkActivity extends AppCompatActivity {
     private ActivityBookMarkBinding binding;
     private BookMarkAdapter adapter;
+    private BookMarkViewModel viewModel;
     private Dialog progressDialog;
     private TextView dialogText;
 
@@ -48,15 +45,18 @@ public class BookMarkActivity extends AppCompatActivity {
         dialogText.setText("Loading ...");
         progressDialog.show();
 
-        // Khởi tạo adapter rỗng ngay từ đầu
-        adapter = new BookMarkAdapter(DbQuery.g_bookmarkList);
+        viewModel = new ViewModelProvider(this).get(BookMarkViewModel.class);
+        adapter = new BookMarkAdapter(viewModel);
         binding.rcvAnswerBookmark.setLayoutManager(new LinearLayoutManager(this));
         binding.rcvAnswerBookmark.setAdapter(adapter);
 
-        DbQuery.loadBookMarks(new MyCompleteListener() {
+        viewModel.getBookmarkList().observe(this, questions -> {
+            adapter.notifyDataSetChanged();
+        });
+
+        viewModel.loadBookMarks(new MyCompleteListener() {
             @Override
             public void onSuccess() {
-                adapter.notifyDataSetChanged();  // Bây giờ adapter đã sẵn sàng
                 progressDialog.dismiss();
             }
 
@@ -67,12 +67,11 @@ public class BookMarkActivity extends AppCompatActivity {
         });
     }
 
-
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item){
-        if(item.getItemId() == android.R.id.home){
-            BookMarkActivity.this.finish();
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }
-    }
+}

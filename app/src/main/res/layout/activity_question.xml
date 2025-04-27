@@ -105,7 +105,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             app:srcCompat="@drawable/ic_back" />
 
         <androidx.appcompat.widget.AppCompatButton
@@ -134,7 +134,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             app:srcCompat="@drawable/ic_next" />
     </LinearLayout>
 
@@ -157,7 +157,7 @@
         android:src="@drawable/ic_bookmark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ln3"
-        app:tint="@color/colorPrimary"
+        app:tint="@color/orangeLight"
         android:layout_marginEnd="16dp"/>
 
 

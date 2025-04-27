@@ -125,6 +125,7 @@ public class QuestionActivity extends AppCompatActivity {
         rcvQuestion.setAdapter(adapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rcvQuestion.setLayoutManager(layoutManager);
+        rcvQuestion.setItemAnimator(null);
         rcvQuestion.setItemViewCacheSize(viewModel.getCurrentQuestionList().size());
 
         setSnapHelper();

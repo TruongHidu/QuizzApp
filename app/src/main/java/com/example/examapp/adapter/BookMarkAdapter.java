@@ -1,86 +1,96 @@
 package com.example.examapp.adapter;
 
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
+import com.example.examapp.databinding.AnswerItemLayoutBinding;
 import com.example.examapp.model.QuestionModel;
+import com.example.examapp.viewmodel.BookMarkViewModel;
 
 import java.util.List;
 
 public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMarkViewHolder> {
-    private List<QuestionModel> questionList;
-    public BookMarkAdapter(List<QuestionModel> questionList){
-        this.questionList = questionList;
+    private final BookMarkViewModel viewModel;
+
+    public BookMarkAdapter(BookMarkViewModel viewModel) {
+        this.viewModel = viewModel;
     }
+
     @NonNull
     @Override
-    public BookMarkAdapter.BookMarkViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
-        View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.answer_item_layout, viewGroup, false);
-        return new BookMarkAdapter.BookMarkViewHolder(view);
+    public BookMarkViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        AnswerItemLayoutBinding binding = AnswerItemLayoutBinding.inflate(
+                LayoutInflater.from(parent.getContext()), parent, false);
+        return new BookMarkViewHolder(binding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull BookMarkAdapter. BookMarkViewHolder bookMarkViewHolder, int i) {
-        String question = questionList.get(i).getQuestion();
-        String optionA = questionList.get(i).getOptionA();
-        String optionB = questionList.get(i).getOptionB();
-        String optionC = questionList.get(i).getOptionC();
-        String optionD = questionList.get(i).getOptionD();
-        int correctOption = questionList.get(i).getCorrectOption();
-
-        bookMarkViewHolder.setData(i, question, optionA, optionB, optionC, optionD, correctOption);
-
-
+    public void onBindViewHolder(@NonNull BookMarkViewHolder holder, int position) {
+        List<QuestionModel> questionList = viewModel.getBookmarkList().getValue();
+        if (questionList != null && position < questionList.size()) {
+            QuestionModel question = questionList.get(position);
+            holder.bind(position, question, viewModel);
+        }
     }
 
     @Override
     public int getItemCount() {
-        return questionList.size();
+        List<QuestionModel> questionList = viewModel.getBookmarkList().getValue();
+        return questionList != null ? questionList.size() : 0;
     }
-    public class BookMarkViewHolder extends RecyclerView.ViewHolder {
-        private TextView txtQuestionNo, txtQuestion, txtOptionA, txtOptionB, txtOptionC, txtOptionD, txtRessult;
 
-        public BookMarkViewHolder(@NonNull View itemView) {
-            super(itemView);
-            txtQuestionNo = itemView.findViewById(R.id.txtQuestionNo);
-            txtQuestion =  itemView.findViewById(R.id.txtQuestion);
-            txtOptionA =  itemView.findViewById(R.id.txtOptionA);
-            txtOptionB =  itemView.findViewById(R.id.txtOptionB);
-            txtOptionC =  itemView.findViewById(R.id.txtOptionC);
-            txtOptionD =  itemView.findViewById(R.id.txtOptionD);
-            txtRessult =  itemView.findViewById(R.id.txtResult);
+    public static class BookMarkViewHolder extends RecyclerView.ViewHolder {
+        private final AnswerItemLayoutBinding binding;
 
+        public BookMarkViewHolder(@NonNull AnswerItemLayoutBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
         }
 
-        private void setData(int position, String question, String optionA, String optionB, String optionC, String optionD, int correctOption){
-            txtQuestionNo.setText("Question: " + String.valueOf((position + 1)));
-            txtQuestion.setText(question);
-            txtOptionA.setText("A. " + optionA);
-            txtOptionB.setText("B. " + optionB);
-            txtOptionC.setText("C. " + optionC);
-            txtOptionD.setText("D. " + optionD);
+        public void bind(int position, QuestionModel question, BookMarkViewModel viewModel) {
+            binding.txtQuestionNo.setText("Question: " + (position + 1));
+            binding.txtQuestion.setText(question.getQuestion());
+            binding.txtOptionA.setText("A. " + question.getOptionA());
+            binding.txtOptionB.setText("B. " + question.getOptionB());
+            binding.txtOptionC.setText("C. " + question.getOptionC());
+            binding.txtOptionD.setText("D. " + question.getOptionD());
 
-            if(correctOption == 1){
-                txtRessult.setText("Answer: " + optionA);
-            }else if(correctOption == 2){
-                txtRessult.setText("Answer: " + optionB);
-            }else if(correctOption == 3){
-                txtRessult.setText("Answer: " + optionC);
-            }else {
-                txtRessult.setText("Answer: " + optionD);
+            int correctOption = question.getCorrectOption();
+            String correctAnswer = "";
+            switch (correctOption) {
+                case 1:
+                    correctAnswer = question.getOptionA();
+                    break;
+                case 2:
+                    correctAnswer = question.getOptionB();
+                    break;
+                case 3:
+                    correctAnswer = question.getOptionC();
+                    break;
+                case 4:
+                    correctAnswer = question.getOptionD();
+                    break;
             }
+            binding.txtResult.setText("Answer: " + correctAnswer);
+            binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.greenLight));
 
-
+            // Handle bookmark
+            binding.btnBookmark.setImageResource(question.isBookMarked() ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+            binding.btnBookmark.setColorFilter(ContextCompat.getColor(
+                    itemView.getContext(), question.isBookMarked() ? R.color.colorPrimary : R.color.gray_light));
+            binding.btnBookmark.setOnClickListener(v -> {
+                boolean newBookmarkState = !question.isBookMarked();
+                viewModel.updateBookmark(position, newBookmarkState);
+                question.setBookMarked(newBookmarkState);
+                binding.btnBookmark.setImageResource(newBookmarkState ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+                binding.btnBookmark.setColorFilter(ContextCompat.getColor(
+                        itemView.getContext(), newBookmarkState ? R.color.colorPrimary : R.color.gray_light));
+            });
         }
-
-
     }
-
-
 }

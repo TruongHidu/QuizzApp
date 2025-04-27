@@ -16,6 +16,7 @@ import com.example.examapp.databinding.QuestionItemLayoutBinding;
 import com.example.examapp.model.QuestionModel;
 
 import java.util.List;
+import java.util.Locale;
 
 public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHolder> {
     private final List<QuestionModel> questionList;
@@ -59,11 +60,11 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
         }
 
         private void setData(QuestionModel question, int position) {
-            binding.txtQuestion.setText(question.getQuestion());
-            binding.optionA.setText(question.getOptionA());
-            binding.optionB.setText(question.getOptionB());
-            binding.optionC.setText(question.getOptionC());
-            binding.optionD.setText(question.getOptionD());
+            binding.txtQuestion.setText((position + 1) +". " + question.getQuestion().toUpperCase());
+            binding.optionA.setText(question.getOptionA().toLowerCase());
+            binding.optionB.setText(question.getOptionB().toLowerCase());
+            binding.optionC.setText(question.getOptionC().toLowerCase());
+            binding.optionD.setText(question.getOptionD().toLowerCase());
 
             resetButtonColors();
 
@@ -82,25 +83,39 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
         }
 
         private void resetButtonColors() {
-            binding.optionA.setBackgroundResource(R.drawable.unselected_button);
-            binding.optionB.setBackgroundResource(R.drawable.unselected_button);
-            binding.optionC.setBackgroundResource(R.drawable.unselected_button);
-            binding.optionD.setBackgroundResource(R.drawable.unselected_button);
+            int defaultColor = binding.getRoot().getContext().getColor(R.color.blueQuestion);
+            int unselectedBg = R.drawable.unselected_button;
+
+            binding.optionA.setBackgroundResource(unselectedBg);
+            binding.optionB.setBackgroundResource(unselectedBg);
+            binding.optionC.setBackgroundResource(unselectedBg);
+            binding.optionD.setBackgroundResource(unselectedBg);
+
+            binding.optionA.setTextColor(defaultColor);
+            binding.optionB.setTextColor(defaultColor);
+            binding.optionC.setTextColor(defaultColor);
+            binding.optionD.setTextColor(defaultColor);
         }
 
+
         private void highlightSelectedOption(int selectedOption) {
+            int selectedColor = binding.getRoot().getContext().getColor(R.color.white);
             switch (selectedOption) {
                 case 1:
                     binding.optionA.setBackgroundResource(R.drawable.selectd_button);
+                    binding.optionA.setTextColor(selectedColor);
                     break;
                 case 2:
                     binding.optionB.setBackgroundResource(R.drawable.selectd_button);
+                    binding.optionB.setTextColor(selectedColor);
                     break;
                 case 3:
                     binding.optionC.setBackgroundResource(R.drawable.selectd_button);
+                    binding.optionC.setTextColor(selectedColor);
                     break;
                 case 4:
                     binding.optionD.setBackgroundResource(R.drawable.selectd_button);
+                    binding.optionD.setTextColor(selectedColor);
                     break;
             }
         }

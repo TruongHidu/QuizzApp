@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Title"
-        android:textColor="@color/black"
+        android:textColor="@color/blueQuestion"
         android:textAlignment="center"
         android:layout_marginTop="16dp"
         android:textSize="20dp"/>
@@ -31,14 +31,14 @@
         android:layout_marginTop="16dp"
         android:layout_marginLeft="18dp"
         android:layout_marginRight="18dp"
-        android:progressTint="@color/colorPrimary"/>
+        android:progressTint="@color/greenLight"/>
 
     <TextView
         android:id="@+id/txtScore"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="80%"
-        android:textColor="@color/colorPrimary"
+        android:textColor="@color/greenLight"
         android:textAlignment="center"
 
         />

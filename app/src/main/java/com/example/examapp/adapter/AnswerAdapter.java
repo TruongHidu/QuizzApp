@@ -1,112 +1,100 @@
 package com.example.examapp.adapter;
 
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
+import com.example.examapp.databinding.AnswerItemLayoutBinding;
 import com.example.examapp.model.QuestionModel;
+import com.example.examapp.viewmodel.TestViewModel;
 
 import java.util.List;
 
 public class AnswerAdapter extends RecyclerView.Adapter<AnswerAdapter.AnswerViewHolder> {
-    private List<QuestionModel> questionList;
-    public AnswerAdapter(List<QuestionModel> questionList){
+    private final List<QuestionModel> questionList;
+    private final TestViewModel viewModel;
+
+    public AnswerAdapter(List<QuestionModel> questionList, TestViewModel viewModel) {
         this.questionList = questionList;
+        this.viewModel = viewModel;
     }
+
     @NonNull
     @Override
-    public AnswerAdapter.AnswerViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
-        View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.answer_item_layout, viewGroup, false);
-        return new AnswerAdapter.AnswerViewHolder(view);
+    public AnswerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        AnswerItemLayoutBinding binding = AnswerItemLayoutBinding.inflate(
+                LayoutInflater.from(parent.getContext()), parent, false);
+        return new AnswerViewHolder(binding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull AnswerAdapter.AnswerViewHolder answerViewHolder, int i) {
-        String question = questionList.get(i).getQuestion();
-        String optionA = questionList.get(i).getOptionA();
-        String optionB = questionList.get(i).getOptionB();
-        String optionC = questionList.get(i).getOptionC();
-        String optionD = questionList.get(i).getOptionD();
-        int selected = questionList.get(i).getSelectedOption();
-        int correctOption = questionList.get(i).getCorrectOption();
-
-        answerViewHolder.setData(i, question, optionA, optionB, optionC, optionD, selected, correctOption);
-
-
+    public void onBindViewHolder(@NonNull AnswerViewHolder holder, int position) {
+        QuestionModel question = questionList.get(position);
+        holder.bind(position, question, viewModel);
     }
 
     @Override
     public int getItemCount() {
-        return questionList.size();
-    }
-    public class AnswerViewHolder extends RecyclerView.ViewHolder {
-        private TextView txtQuestionNo, txtQuestion, txtOptionA, txtOptionB, txtOptionC, txtOptionD, txtRessult;
-
-        public AnswerViewHolder(@NonNull View itemView) {
-            super(itemView);
-            txtQuestionNo = itemView.findViewById(R.id.txtQuestionNo);
-            txtQuestion =  itemView.findViewById(R.id.txtQuestion);
-            txtOptionA =  itemView.findViewById(R.id.txtOptionA);
-            txtOptionB =  itemView.findViewById(R.id.txtOptionB);
-            txtOptionC =  itemView.findViewById(R.id.txtOptionC);
-            txtOptionD =  itemView.findViewById(R.id.txtOptionD);
-            txtRessult =  itemView.findViewById(R.id.txtResult);
-
-        }
-
-        private void setData(int position, String question, String optionA, String optionB, String optionC, String optionD,int selected, int correctOption){
-            txtQuestionNo.setText("Question: " + String.valueOf((position + 1)));
-            txtQuestion.setText(question);
-            txtOptionA.setText("A. " + optionA);
-            txtOptionB.setText("B. " + optionB);
-            txtOptionC.setText("C. " + optionC);
-            txtOptionD.setText("D. " + optionD);
-
-           if(selected == -1){
-               txtRessult.setText("Not answered");
-               txtRessult.setTextColor(itemView.getContext().getColor(R.color.black));
-               setOptionColorf(selected, R.color.textNormal);
-           }else if(selected == correctOption){
-               txtRessult.setText("Correct");
-               txtRessult.setTextColor(itemView.getContext().getColor(R.color.green));
-               setOptionColorf(selected, R.color.green);
-           }else{
-               txtRessult.setText("Wrong");
-               txtRessult.setTextColor(itemView.getContext().getColor(R.color.red));
-               setOptionColorf(selected, R.color.red);
-           }
-
-        }
-
-        private void setOptionColorf(int selected, int color) {
-            if(selected == 1){
-                txtOptionA.setTextColor(itemView.getContext().getColor(color));
-            } else{
-                txtOptionA.setTextColor(itemView.getContext().getColor(R.color.textNormal));
-            }
-            if(selected == 2){
-                txtOptionB.setTextColor(itemView.getContext().getColor(color));
-            } else{
-                txtOptionB.setTextColor(itemView.getContext().getColor(R.color.textNormal));
-            }
-            if(selected == 3){
-                txtOptionC.setTextColor(itemView.getContext().getColor(color));
-            } else{
-                txtOptionC.setTextColor(itemView.getContext().getColor(R.color.textNormal));
-            }
-            if(selected == 4){
-                txtOptionD.setTextColor(itemView.getContext().getColor(color ));
-            } else{
-                txtOptionD.setTextColor(itemView.getContext().getColor(R.color.textNormal));
-            }
-
-        }
+        return questionList != null ? questionList.size() : 0;
     }
 
+    public static class AnswerViewHolder extends RecyclerView.ViewHolder {
+        private final AnswerItemLayoutBinding binding;
 
+        public AnswerViewHolder(@NonNull AnswerItemLayoutBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+
+        public void bind(int position, QuestionModel question, TestViewModel viewModel) {
+            binding.txtQuestionNo.setText("Question: " + (position + 1));
+            binding.txtQuestion.setText(question.getQuestion());
+            binding.txtOptionA.setText("A. " + question.getOptionA());
+            binding.txtOptionB.setText("B. " + question.getOptionB());
+            binding.txtOptionC.setText("C. " + question.getOptionC());
+            binding.txtOptionD.setText("D. " + question.getOptionD());
+
+            // Handle result and option colors
+            int selected = question.getSelectedOption();
+            int correctOption = question.getCorrectOption();
+            if (selected == -1) {
+                binding.txtResult.setText("Not answered");
+                binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.gray_dark));
+                setOptionColor(selected, R.color.gray_dark);
+            } else if (selected == correctOption) {
+                binding.txtResult.setText("Correct");
+                binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.green));
+                setOptionColor(selected, R.color.green);
+            } else {
+                binding.txtResult.setText("Wrong");
+                binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.red));
+                setOptionColor(selected, R.color.red);
+            }
+
+            // Handle bookmark
+            binding.btnBookmark.setImageResource(question.isBookMarked() ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+            binding.btnBookmark.setColorFilter(ContextCompat.getColor(
+                    itemView.getContext(), question.isBookMarked() ? R.color.colorPrimary : R.color.gray_light));
+            binding.btnBookmark.setOnClickListener(v -> {
+                boolean newBookmarkState = !question.isBookMarked();
+                viewModel.updateBookmark(position, newBookmarkState);
+                question.setBookMarked(newBookmarkState);
+                binding.btnBookmark.setImageResource(newBookmarkState ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+                binding.btnBookmark.setColorFilter(ContextCompat.getColor(
+                        itemView.getContext(), newBookmarkState ? R.color.colorPrimary : R.color.gray_light));
+            });
+        }
+
+        private void setOptionColor(int selected, int color) {
+            int defaultColor = itemView.getContext().getColor(R.color.gray_dark);
+            binding.txtOptionA.setTextColor(selected == 1 ? itemView.getContext().getColor(color) : defaultColor);
+            binding.txtOptionB.setTextColor(selected == 2 ? itemView.getContext().getColor(color) : defaultColor);
+            binding.txtOptionC.setTextColor(selected == 3 ? itemView.getContext().getColor(color) : defaultColor);
+            binding.txtOptionD.setTextColor(selected == 4 ? itemView.getContext().getColor(color) : defaultColor);
+        }
+    }
 }

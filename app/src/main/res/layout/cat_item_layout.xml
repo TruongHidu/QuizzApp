@@ -29,7 +29,7 @@
                 android:textSize="18dp"
                 android:textStyle="bold"
                 android:textAlignment="center"
-                android:textColor="@color/black"/>
+                android:textColor="@color/blueQuestion"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
