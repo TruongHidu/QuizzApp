@@ -45,16 +45,16 @@ public class MyProfileActivity extends AppCompatActivity {
     private void disableEditing() {
         binding.txtProfileEmail.setEnabled(false);
         binding.txtProfileName.setEnabled(false);
-        binding.txtProfilePhone.setEnabled(false);
+//        binding.txtProfilePhone.setEnabled(false);
         binding.btnSave.setVisibility(View.GONE);
         binding.btnEdit.setVisibility(View.VISIBLE);
         binding.btnCancel.setVisibility(View.GONE);
 
         binding.txtProfileName.setText(DbQuery.myProfile.getName());
         binding.txtProfileEmail.setText(DbQuery.myProfile.getEmail());
-        if (DbQuery.myProfile.getPhone() != null) {
-            binding.txtProfilePhone.setText(DbQuery.myProfile.getPhone());
-        }
+//        if (DbQuery.myProfile.getPhone() != null) {
+//            binding.txtProfilePhone.setText(DbQuery.myProfile.getPhone());
+//        }
         String profileName = DbQuery.myProfile.getName();
         binding.profileText.setText(profileName.toUpperCase().substring(0, 1));
     }
@@ -78,10 +78,10 @@ public class MyProfileActivity extends AppCompatActivity {
 
     private void saveData() {
         progressDialog.show("Saving...");
-        if (phoneStr.isEmpty()) {
-            phoneStr = null;
-        }
-        viewModel.saveUserData(nameStr, phoneStr, new MyCompleteListener() {
+//        if (phoneStr.isEmpty()) {
+//            phoneStr = null;
+//        }
+        viewModel.saveUserData(nameStr, new MyCompleteListener() {
             @Override
             public void onSuccess() {
                 progressDialog.dismiss();
@@ -97,7 +97,7 @@ public class MyProfileActivity extends AppCompatActivity {
 
     private void enableEditing() {
         binding.txtProfileName.setEnabled(true);
-        binding.txtProfilePhone.setEnabled(true);
+//        binding.txtProfilePhone.setEnabled(true);
         binding.btnSave.setVisibility(View.VISIBLE);
         binding.btnEdit.setVisibility(View.GONE);
         binding.btnCancel.setVisibility(View.VISIBLE);
@@ -105,20 +105,20 @@ public class MyProfileActivity extends AppCompatActivity {
 
     private boolean validate() {
         nameStr = binding.txtProfileName.getText().toString().trim();
-        phoneStr = binding.txtProfilePhone.getText().toString().trim();
+//        phoneStr = binding.txtProfilePhone.getText().toString().trim();
         if (nameStr.isEmpty()) {
             binding.txtProfileName.setError("Please enter your name");
             return false;
         }
-        if (!phoneStr.isEmpty()) {
-            if (phoneStr.length() != 10 || !phoneStr.matches("[0-9]+")) {
-                binding.txtProfilePhone.setError("Phone number must be 10 digits !");
-                return false;
-            }
-        }else{
-            binding.txtProfilePhone.setError("Please enter your phone number");
-            return false;
-        }
+//        if (!phoneStr.isEmpty()) {
+//            if (phoneStr.length() != 10 || !phoneStr.matches("[0-9]+")) {
+//                binding.txtProfilePhone.setError("Phone number must be 10 digits !");
+//                return false;
+//            }
+//        }else{
+//            binding.txtProfilePhone.setError("Please enter your phone number");
+//            return false;
+//        }
         return true;
     }
 

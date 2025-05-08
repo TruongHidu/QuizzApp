@@ -37,16 +37,17 @@ public class AccountFragment extends Fragment {
         progressDialogUtil.show("Loading ...");
 
         // Set initial profile data
-        binding.txtName.setText(DbQuery.myProfile.getName());
-        binding.imgName.setText(DbQuery.myProfile.getName() != null && !DbQuery.myProfile.getName().isEmpty() ?
-                DbQuery.myProfile.getName().toUpperCase().substring(0, 1) : "N");
+        updateProfileUI();
 
         // Observe ViewModel data
         viewModel.getUserPerformance().observe(getViewLifecycleOwner(), performance -> {
             progressDialogUtil.dismiss();
-            if (performance != null) {
+            if (performance != null && performance.getRank() > 0) {
                 binding.txtOverRollScore.setText(String.valueOf(performance.getScore()));
-                binding.txtRank.setText(performance.getRank() > 0 ? String.valueOf(performance.getRank()) : "NA");
+                binding.txtRank.setText(String.valueOf(performance.getRank()));
+            } else {
+                binding.txtOverRollScore.setText("0");
+                binding.txtRank.setText("NA");
             }
         });
 
@@ -78,7 +79,6 @@ public class AccountFragment extends Fragment {
             }
         });
 
-
         binding.btnProfile.setOnClickListener(v -> {
             progressDialogUtil.dismiss();
             startActivity(new Intent(getContext(), MyProfileActivity.class));
@@ -86,6 +86,7 @@ public class AccountFragment extends Fragment {
 
         binding.btnLogout.setOnClickListener(v -> {
             progressDialogUtil.dismiss();
+            viewModel.clearData();
             FirebaseAuth.getInstance().signOut();
             startActivity(new Intent(getContext(), LoginActivity.class));
             requireActivity().finish();
@@ -97,9 +98,13 @@ public class AccountFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        binding.txtName.setText(DbQuery.myProfile.getName());
-        binding.imgName.setText(DbQuery.myProfile.getName() != null && !DbQuery.myProfile.getName().isEmpty() ?
-                DbQuery.myProfile.getName().toUpperCase().substring(0, 1) : "N");
+        updateProfileUI();
+    }
+
+    private void updateProfileUI() {
+        String name = DbQuery.myProfile != null ? DbQuery.myProfile.getName() : "";
+        binding.txtName.setText(name);
+        binding.imgName.setText(name != null && !name.isEmpty() ? name.toUpperCase().substring(0, 1) : "N");
     }
 
     @Override

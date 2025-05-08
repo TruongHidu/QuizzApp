@@ -1,7 +1,6 @@
 package com.example.examapp.database;
 
 import android.util.ArrayMap;
-import android.widget.Toast;
 
 import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.CategoryModel;
@@ -11,7 +10,6 @@ import com.example.examapp.model.RankModel;
 import com.example.examapp.model.TestModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -30,28 +28,25 @@ public class DbQuery {
     public static List<CategoryModel> g_categoryList = new ArrayList<>();
     public static List<TestModel> g_testList = new ArrayList<>();
     public static int g_selected_test_index = 0;
-    public static List<String>  g_bmIdList = new ArrayList<>();
+    public static List<String> g_bmIdList = new ArrayList<>();
     public static List<QuestionModel> g_bookmarkList = new ArrayList<>();
     public static List<QuestionModel> g_questionList = new ArrayList<>();
     public static int g_selectedCatIndex = 0;
     public static List<RankModel> g_userList = new ArrayList<>();
     public static int g_userCount = 0;
-    public static RankModel myPerformanece = new RankModel(0, -1,null);
-
+    public static RankModel myPerformanece = new RankModel(0, 0, "");
     public static final int NOT_VISITED = 0;
     public static final int UNANSWERED = 1;
     public static final int ANSWERED = 2;
     public static final int HIGHTLIGHTED = 3;
     public static boolean isMeOnTopList = false;
-//    static int tmp;
-
     public static ProfileModel myProfile = new ProfileModel("NA", null, null, 0);
+
     public static void initFirestore() {
         if (g_firestore == null) {
             g_firestore = FirebaseFirestore.getInstance();
         }
     }
-
 
     private static void ensureFirestoreInitialized() {
         if (g_firestore == null) {
@@ -61,10 +56,19 @@ public class DbQuery {
 
     public static void getUserData(MyCompleteListener listener) {
         ensureFirestoreInitialized();
-        g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getUid())
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            myProfile = new ProfileModel("NA", null, null, 0);
+            myPerformanece = new RankModel(0, 0, "");
+            listener.onFailture();
+            return;
+        }
+
+        g_firestore.collection("USERS").document(userId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    myProfile.setName(documentSnapshot.getString("NAME"));
+                    myProfile.setName(documentSnapshot.getString("NAME") != null ? documentSnapshot.getString("NAME") : "NA");
                     myProfile.setEmail(documentSnapshot.getString("EMAIL_ID"));
                     if (documentSnapshot.getString("PHONE") != null) {
                         myProfile.setPhone(documentSnapshot.getString("PHONE"));
@@ -72,94 +76,112 @@ public class DbQuery {
                     if (documentSnapshot.getLong("BOOKMARKS") != null) {
                         myProfile.setBookmarkCount(documentSnapshot.getLong("BOOKMARKS").intValue());
                     }
-                    myPerformanece.setScore(documentSnapshot.getLong("TOTAL_SCORE").intValue());
-                    myPerformanece.setName(documentSnapshot.getString("NAME"));
+                    int score = documentSnapshot.getLong("TOTAL_SCORE") != null ?
+                            documentSnapshot.getLong("TOTAL_SCORE").intValue() : 0;
+                    myPerformanece = new RankModel(score, 0, myProfile.getName());
+                    listener.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    myProfile = new ProfileModel("NA", null, null, 0);
+                    myPerformanece = new RankModel(0, 0, "");
+                    listener.onFailture();
+                });
+    }
+
+    public static void saveUserData(String name, MyCompleteListener listener) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            listener.onFailture();
+            return;
+        }
+
+        Map<String, Object> profileData = new ArrayMap<>();
+        profileData.put("NAME", name);
+//        if (phone != null) {
+//            profileData.put("PHONE", phone);
+//        }
+        ensureFirestoreInitialized();
+        g_firestore.collection("USERS").document(userId)
+                .update(profileData)
+                .addOnSuccessListener(unused -> {
+                    myProfile.setName(name);
+                    myPerformanece.setName(name);
+//                    if (phone != null) {
+//                        myProfile.setPhone(phone);
+//                    }
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailture());
     }
-    public static void saveUserData(String name, String phone, MyCompleteListener listener) {
-        Map<String, Object> profileData  =new ArrayMap<>();
-        profileData.put("NAME", name);
-        if (phone != null){
-            profileData.put("PHONE", phone);
-        }
-        g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getUid())
-                .update(profileData)
-                .addOnSuccessListener(unused -> {
-                    myProfile.setName(name);
-                    if(phone != null) {
-                        myProfile.setPhone(phone);
-                        listener.onSuccess();
-                    }
-                })
-                .addOnFailureListener(runnable -> {
-                    listener.onFailture();
-                        });
-    }
-
-
 
     public static void createUserData(String email, String name, MyCompleteListener listener) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            listener.onFailture();
+            return;
+        }
+
         Map<String, Object> userData = new ArrayMap<>();
         userData.put("EMAIL_ID", email);
         userData.put("NAME", name);
         userData.put("TOTAL_SCORE", 0);
         userData.put("BOOKMARKS", 0);
 
-        DocumentReference userDoc = g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getCurrentUser().getUid());
-
+        ensureFirestoreInitialized();
+        DocumentReference userDoc = g_firestore.collection("USERS").document(userId);
         WriteBatch batch = g_firestore.batch();
         batch.set(userDoc, userData);
 
         DocumentReference countDoc = g_firestore.collection("USERS").document("TOTAL_USERS");
         batch.update(countDoc, "COUNT", FieldValue.increment(1));
-        batch.commit().addOnSuccessListener(unused -> {
-
+        batch.commit()
+                .addOnSuccessListener(unused -> {
+                    myProfile = new ProfileModel(name, email, null, 0);
+                    myPerformanece = new RankModel(0, 0, name);
                     listener.onSuccess();
-
-                }
-
-        ).addOnFailureListener(e -> {
-            listener.onFailture();
-
-
-        });
-
+                })
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
-    public static void loadBmIds(MyCompleteListener listener){
+    public static void loadBmIds(MyCompleteListener listener) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            g_bmIdList.clear();
+            listener.onFailture();
+            return;
+        }
+
+        ensureFirestoreInitialized();
         g_bmIdList.clear();
-        g_firestore.collection("USERS").document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+        g_firestore.collection("USERS").document(userId)
                 .collection("USER_DATA").document("BOOKMARKS")
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-
-                    int  count = myProfile.getBookmarkCount();
-
-                    for(int i = 0; i < count; i++){
+                    int count = myProfile.getBookmarkCount();
+                    for (int i = 0; i < count; i++) {
                         String bmId = documentSnapshot.getString("BM" + String.valueOf(i + 1));
-                        g_bmIdList.add(bmId);
+                        if (bmId != null) {
+                            g_bmIdList.add(bmId);
+                        }
                     }
                     listener.onSuccess();
-
-
                 })
-                .addOnFailureListener(runnable -> {
-                    listener.onFailture();
-
-                });
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
-    public static void loadBookMarks(MyCompleteListener listener){
+    public static void loadBookMarks(MyCompleteListener listener) {
         g_bookmarkList.clear();
-        AtomicInteger tmp = new AtomicInteger(0); // Dùng biến cục bộ
+        AtomicInteger tmp = new AtomicInteger(0);
 
         if (g_bmIdList.size() == 0) {
             listener.onSuccess();
             return;
         }
 
+        ensureFirestoreInitialized();
         for (String docID : g_bmIdList) {
             g_firestore.collection("Question").document(docID)
                     .get()
@@ -178,7 +200,6 @@ public class DbQuery {
                                     false
                             ));
                         }
-
                         if (tmp.incrementAndGet() == g_bmIdList.size()) {
                             listener.onSuccess();
                         }
@@ -187,9 +208,18 @@ public class DbQuery {
         }
     }
 
-
     public static void getTopUsers(MyCompleteListener listener) {
         ensureFirestoreInitialized();
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            g_userList.clear();
+            myPerformanece = new RankModel(0, 0, "");
+            isMeOnTopList = false;
+            listener.onFailture();
+            return;
+        }
+
         g_firestore.collection("USERS")
                 .whereGreaterThan("TOTAL_SCORE", 0)
                 .orderBy("TOTAL_SCORE", Query.Direction.DESCENDING)
@@ -199,35 +229,57 @@ public class DbQuery {
                     g_userList.clear();
                     isMeOnTopList = false;
                     int rank = 1;
-                    String myUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         g_userList.add(new RankModel(
                                 doc.getLong("TOTAL_SCORE").intValue(),
                                 rank,
                                 doc.getString("NAME")
                         ));
-                        if (myUID.compareTo(doc.getId()) == 0) {
+                        if (userId.equals(doc.getId())) {
                             isMeOnTopList = true;
                             myPerformanece.setRank(rank);
                         }
                         rank++;
                     }
-                    listener.onSuccess();
+
+                    // Nếu người dùng không trong top 20, lấy TOTAL_SCORE từ tài liệu người dùng
+                    if (!isMeOnTopList) {
+                        g_firestore.collection("USERS").document(userId)
+                                .get()
+                                .addOnSuccessListener(documentSnapshot -> {
+                                    int score = documentSnapshot.getLong("TOTAL_SCORE") != null ?
+                                            documentSnapshot.getLong("TOTAL_SCORE").intValue() : 0;
+                                    String name = documentSnapshot.getString("NAME") != null ?
+                                            documentSnapshot.getString("NAME") : "";
+                                    myPerformanece = new RankModel(score, 0, name);
+                                    listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    myPerformanece = new RankModel(0, 0, myProfile.getName());
+                                    listener.onSuccess();
+                                });
+                    } else {
+                        listener.onSuccess();
+                    }
                 })
-                .addOnFailureListener(e -> listener.onFailture());
+                .addOnFailureListener(e -> {
+                    g_userList.clear();
+                    myPerformanece = new RankModel(0, 0, myProfile.getName());
+                    listener.onSuccess();
+                });
     }
 
-    public static void getUsersCount(MyCompleteListener listener){
+    public static void getUsersCount(MyCompleteListener listener) {
+        ensureFirestoreInitialized();
         g_firestore.collection("USERS").document("TOTAL_USERS")
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    g_userCount = documentSnapshot.getLong("COUNT").intValue();
+                    g_userCount = documentSnapshot.getLong("COUNT") != null ?
+                            documentSnapshot.getLong("COUNT").intValue() : 0;
                     listener.onSuccess();
                 })
-                .addOnFailureListener(runnable -> {
-                    listener.onFailture();
-                });
-
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
     public static void loadCategories(MyCompleteListener listener) {
@@ -260,9 +312,9 @@ public class DbQuery {
         }
 
         g_testList.clear();
-
         String catDocId = g_categoryList.get(g_selectedCatIndex).getDocId();
 
+        ensureFirestoreInitialized();
         g_firestore.collection("QUIZ")
                 .document(catDocId)
                 .collection("TEST_LIST")
@@ -312,9 +364,7 @@ public class DbQuery {
                                 });
                     }
                 })
-                .addOnFailureListener(e -> {
-                    listener.onFailture();
-                });
+                .addOnFailureListener(e -> listener.onFailture());
     }
 
     public static void loadData(MyCompleteListener listener) {
@@ -328,25 +378,19 @@ public class DbQuery {
                             @Override
                             public void onSuccess() {
                                 loadBmIds(listener);
-
-
                             }
                             @Override
                             public void onFailture() {
                                 listener.onFailture();
                             }
                         });
-
-
                     }
                     @Override
                     public void onFailture() {
                         listener.onFailture();
                     }
-
                 });
             }
-
             @Override
             public void onFailture() {
                 listener.onFailture();
@@ -356,18 +400,14 @@ public class DbQuery {
 
     public static void loadQuestions(MyCompleteListener listener) {
         g_questionList.clear();
+        ensureFirestoreInitialized();
         g_firestore.collection("Question")
                 .whereEqualTo("CATEGORY", g_categoryList.get(g_selectedCatIndex).getDocId())
                 .whereEqualTo("TEST", g_testList.get(g_selected_test_index).getTestId())
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        boolean isBookMarked = false;
-
-                        if(g_bmIdList.contains(doc.getId())){
-                            isBookMarked = true;
-
-                        }
+                        boolean isBookMarked = g_bmIdList.contains(doc.getId());
                         g_questionList.add(new QuestionModel(
                                 doc.getId(),
                                 doc.getString("QUESTION"),
@@ -375,27 +415,35 @@ public class DbQuery {
                                 doc.getString("B"),
                                 doc.getString("C"),
                                 doc.getString("D"),
-                                doc.getLong("ANSWER").intValue(),-1,
+                                doc.getLong("ANSWER").intValue(),
+                                -1,
                                 NOT_VISITED,
                                 isBookMarked
                         ));
-
                     }
                     listener.onSuccess();
-                }).addOnFailureListener(e -> {
-                    listener.onFailture();
-                });
-
+                })
+                .addOnFailureListener(e -> listener.onFailture());
     }
+
     public static void loadMyScore(MyCompleteListener listener) {
         ensureFirestoreInitialized();
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            for (int i = 0; i < g_testList.size(); i++) {
+                g_testList.get(i).setTopScore(0);
+            }
+            listener.onFailture();
+            return;
+        }
+
         DocumentReference scoreDoc = g_firestore.collection("USERS")
-                .document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .document(userId)
                 .collection("USER_DATA").document("MY_SCORES");
 
         scoreDoc.get().addOnSuccessListener(documentSnapshot -> {
             if (!documentSnapshot.exists()) {
-                // Document doesn't exist, initialize with 0 scores
                 for (int i = 0; i < g_testList.size(); i++) {
                     g_testList.get(i).setTopScore(0);
                 }
@@ -418,25 +466,30 @@ public class DbQuery {
                     } else if (value instanceof Integer) {
                         topScore = (Integer) value;
                     }
-                    System.out.println("Loaded score for " + testId + ": " + topScore); // Debug log
                 }
                 g_testList.get(i).setTopScore(topScore);
             }
             listener.onSuccess();
         }).addOnFailureListener(e -> {
-            System.err.println("Failed to load scores: " + e.getMessage());
             for (int i = 0; i < g_testList.size(); i++) {
                 g_testList.get(i).setTopScore(0);
             }
             listener.onFailture();
         });
     }
+
     public static void saveResult(int score, MyCompleteListener listener) {
-        DocumentReference userDoc = g_firestore.collection("USERS")
-                .document(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (userId == null) {
+            listener.onFailture();
+            return;
+        }
+
+        ensureFirestoreInitialized();
+        DocumentReference userDoc = g_firestore.collection("USERS").document(userId);
         DocumentReference scoreDoc = userDoc.collection("USER_DATA").document("MY_SCORES");
 
-        // 1. Cập nhật BOOKMARKS
         Map<String, Object> bmData = new ArrayMap<>();
         for (int i = 0; i < g_bmIdList.size(); i++) {
             bmData.put("BM" + (i + 1), g_bmIdList.get(i));
@@ -446,7 +499,6 @@ public class DbQuery {
         WriteBatch batch = g_firestore.batch();
         batch.set(bmDoc, bmData);
 
-        // 2. Lấy điểm từ Firestore
         scoreDoc.get().addOnSuccessListener(documentSnapshot -> {
             Map<String, Object> testData = new ArrayMap<>();
             AtomicInteger totalScore = new AtomicInteger(0);
@@ -456,7 +508,6 @@ public class DbQuery {
                 allScores = new HashMap<>();
             }
 
-            // 3. Cập nhật điểm bài test đã từng làm hoặc đang làm
             for (int i = 0; i < g_testList.size(); i++) {
                 String testId = g_testList.get(i).getTestId();
                 int savedTopScore = 0;
@@ -471,17 +522,14 @@ public class DbQuery {
                     }
                 }
 
-                // Nếu bài đang làm hoặc đã có điểm cũ, thì cập nhật
                 if (i == g_selected_test_index || hasPreviousScore) {
                     int newTopScore = (i == g_selected_test_index && score > savedTopScore) ? score : savedTopScore;
                     g_testList.get(i).setTopScore(newTopScore);
-
                     testData.put(testId, (long) newTopScore);
                     allScores.put(testId, newTopScore);
                 }
             }
 
-            // 4. Tính tổng điểm từ tất cả bài đã làm
             for (Object value : allScores.values()) {
                 if (value instanceof Long) {
                     totalScore.addAndGet(((Long) value).intValue());
@@ -490,7 +538,6 @@ public class DbQuery {
                 }
             }
 
-            // 5. Ghi vào Firestore
             Map<String, Object> userData = new ArrayMap<>();
             userData.put("TOTAL_SCORE", totalScore.get());
             userData.put("BOOKMARKS", g_bmIdList.size());
@@ -502,13 +549,6 @@ public class DbQuery {
                 myPerformanece.setScore(totalScore.get());
                 listener.onSuccess();
             }).addOnFailureListener(e -> listener.onFailture());
-
         }).addOnFailureListener(e -> listener.onFailture());
     }
-
-
-
-
-
 }
-

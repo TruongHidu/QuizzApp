@@ -13,9 +13,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.examapp.R;
 import com.example.examapp.databinding.ActivityScoreBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.model.TestModel;
 import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.TestViewModel;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ScoreActivity extends AppCompatActivity {
@@ -54,6 +56,9 @@ public class ScoreActivity extends AppCompatActivity {
                     binding.txtUnAttemptQuestion.setText(String.valueOf(scoreResult.unAttemptedQuestions));
                     binding.txtTotalQuestions.setText(String.valueOf(scoreResult.totalQuestions));
                     binding.txtTotalScore.setText(String.valueOf(scoreResult.finalScore));
+                    List<TestModel> testList = viewModel.getCurrentTestList();
+                    int selectedTestIndex = viewModel.getSelectedTestIndex();
+                    binding.txtTestNum.setText(testList.get(selectedTestIndex).getTestId());
 
                     String time = String.format("%02d:%02d min",
                             TimeUnit.MILLISECONDS.toMinutes(timeTaken),

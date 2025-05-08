@@ -14,7 +14,6 @@ public class AccountViewModel extends ViewModel {
     }
 
     public LiveData<RankModel> getUserPerformance() {
-
         return authRepository.getUserPerformance();
     }
 
@@ -27,7 +26,11 @@ public class AccountViewModel extends ViewModel {
     }
 
     public void loadAccountData() {
-        authRepository.loadTopUsers(); // Removed boolean parameter
+        authRepository.loadTopUsers();
         authRepository.loadUserCount();
+    }
+
+    public void clearData() {
+        authRepository.clearData();
     }
 }

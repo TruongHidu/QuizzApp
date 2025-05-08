@@ -60,11 +60,11 @@ public class QuestionAdapter extends RecyclerView.Adapter<QuestionAdapter.ViewHo
         }
 
         private void setData(QuestionModel question, int position) {
-            binding.txtQuestion.setText((position + 1) +". " + question.getQuestion().toUpperCase());
-            binding.optionA.setText(question.getOptionA().toLowerCase());
-            binding.optionB.setText(question.getOptionB().toLowerCase());
-            binding.optionC.setText(question.getOptionC().toLowerCase());
-            binding.optionD.setText(question.getOptionD().toLowerCase());
+            binding.txtQuestion.setText((position + 1) +") " + question.getQuestion().toUpperCase());
+            binding.optionA.setText(question.getOptionA());
+            binding.optionB.setText(question.getOptionB());
+            binding.optionC.setText(question.getOptionC());
+            binding.optionD.setText(question.getOptionD());
 
             resetButtonColors();
 

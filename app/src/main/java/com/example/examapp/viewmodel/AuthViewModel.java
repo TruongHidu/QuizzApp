@@ -22,7 +22,12 @@ public class AuthViewModel extends ViewModel {
         authRepository.signUp(email, password, fullName, listener);
     }
 
-    public void saveUserData(String name, String phone, MyCompleteListener listener) {
-        authRepository.saveUserData(name, phone, listener);
+    public void saveUserData(String name, MyCompleteListener listener) {
+        authRepository.saveUserData(name, listener);
     }
+//    public void checkPhone(String phone, MyCompleteListener listener){
+//        authRepository.checkPhone(phone, listener);
+//    }
+
+
 }
