@@ -56,13 +56,13 @@ public class QuestionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.question_list_layout);
 
-        // Initialize ProgressDialogUtil
+
         progressDialogUtil = new ProgressDialogUtil(this);
 
-        // Initialize ViewModel
+
         viewModel = new ViewModelProvider(this).get(TestViewModel.class);
 
-        // Observe error messages
+
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {
                 progressDialogUtil.dismiss();

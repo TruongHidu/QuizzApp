@@ -218,30 +218,6 @@ public class AuthRepository {
         });
     }
 
-    public void checkPhone(String phone, MyCompleteListener listener) {
-        if (phone == null || phone.trim().isEmpty()) {
-            errorMessage.postValue("Phone number cannot be empty.");
-            listener.onFailture();
-            return;
-        }
-
-        firestore.collection("USERS")
-                .whereEqualTo("PHONE", phone.trim())
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        errorMessage.postValue("Phone number is already used.");
-                        listener.onFailture();
-                    } else {
-                        listener.onSuccess();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    errorMessage.postValue("Failed to check phone number: " + e.getMessage());
-                    listener.onFailture();
-                });
-    }
-
     public void checkName(String name, String currentUserId, MyCompleteListener listener) {
         if (name == null || name.trim().isEmpty()) {
             errorMessage.postValue("Username cannot be empty.");

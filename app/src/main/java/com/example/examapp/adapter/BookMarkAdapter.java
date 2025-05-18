@@ -80,17 +80,17 @@ public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMa
             binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.greenLight));
 
             // Handle bookmark
-            binding.btnBookmark.setImageResource(question.isBookMarked() ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+            binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_new);
             binding.btnBookmark.setColorFilter(ContextCompat.getColor(
-                    itemView.getContext(), question.isBookMarked() ? R.color.colorPrimary : R.color.gray_light));
-            binding.btnBookmark.setOnClickListener(v -> {
-                boolean newBookmarkState = !question.isBookMarked();
-                viewModel.updateBookmark(position, newBookmarkState);
-                question.setBookMarked(newBookmarkState);
-                binding.btnBookmark.setImageResource(newBookmarkState ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
-                binding.btnBookmark.setColorFilter(ContextCompat.getColor(
-                        itemView.getContext(), newBookmarkState ? R.color.colorPrimary : R.color.gray_light));
-            });
+                    itemView.getContext(), R.color.colorPrimary));
+//            binding.btnBookmark.setOnClickListener(v -> {
+//                boolean newBookmarkState = !question.isBookMarked();
+//                viewModel.updateBookmark(position, newBookmarkState);
+//                question.setBookMarked(newBookmarkState);
+//                binding.btnBookmark.setImageResource(newBookmarkState ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
+//                binding.btnBookmark.setColorFilter(ContextCompat.getColor(
+//                        itemView.getContext(), newBookmarkState ? R.color.colorPrimary : R.color.gray_light));
+//            });
         }
     }
 }
