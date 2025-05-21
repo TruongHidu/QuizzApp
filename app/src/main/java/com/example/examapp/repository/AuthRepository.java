@@ -20,6 +20,8 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import android.util.ArrayMap;
 
 public class AuthRepository {
     private FirebaseAuth mAuth;
@@ -27,6 +29,7 @@ public class AuthRepository {
 
     private MutableLiveData<Boolean> loginStatus = new MutableLiveData<>();
     private MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    private MutableLiveData<ProfileModel> userProfile = new MutableLiveData<>();
     private MutableLiveData<RankModel> userPerformance = new MutableLiveData<>();
     private MutableLiveData<List<RankModel>> topUsers = new MutableLiveData<>();
     private MutableLiveData<Integer> userCount = new MutableLiveData<>();
@@ -44,6 +47,10 @@ public class AuthRepository {
 
     public LiveData<String> getErrorMessage() {
         return errorMessage;
+    }
+
+    public LiveData<ProfileModel> getUserProfile() {
+        return userProfile;
     }
 
     public LiveData<RankModel> getUserPerformance() {
@@ -64,6 +71,28 @@ public class AuthRepository {
 
     public LiveData<List<TestModel>> getTests() {
         return tests;
+    }
+
+    public void getUserData(MyCompleteListener listener) {
+        DbQuery.getUserData(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                userProfile.postValue(new ProfileModel(
+                        DbQuery.myProfile.getName(),
+                        DbQuery.myProfile.getEmail(),
+                        DbQuery.myProfile.getPhone(),
+                        DbQuery.myProfile.getBookmarkCount()
+                ));
+                listener.onSuccess();
+            }
+
+            @Override
+            public void onFailture() {
+                userProfile.postValue(new ProfileModel("NA", null, null, 0));
+                errorMessage.postValue("Failed to load user data");
+                listener.onFailture();
+            }
+        });
     }
 
     public void login(String email, String password, MyCompleteListener listener) {
@@ -92,17 +121,14 @@ public class AuthRepository {
     }
 
     public void signUp(String email, String password, String fullName, MyCompleteListener listener) {
-        // Kiểm tra xem fullName đã tồn tại trong Firestore chưa
         firestore.collection("USERS")
                 .whereEqualTo("NAME", fullName)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!queryDocumentSnapshots.isEmpty()) {
-                        // fullName đã tồn tại
                         errorMessage.postValue("Username already exists.");
                         listener.onFailture();
                     } else {
-                        // fullName chưa tồn tại, tiếp tục tạo tài khoản
                         mAuth.createUserWithEmailAndPassword(email, password)
                                 .addOnCompleteListener(task -> {
                                     if (task.isSuccessful()) {
@@ -162,7 +188,6 @@ public class AuthRepository {
             return;
         }
 
-        // Kiểm tra xem tên đã tồn tại trong Firestore (trừ tài liệu của người dùng hiện tại)
         firestore.collection("USERS")
                 .whereEqualTo("NAME", name)
                 .get()
@@ -178,7 +203,6 @@ public class AuthRepository {
                         errorMessage.postValue("Username already exists.");
                         listener.onFailture();
                     } else {
-                        // Tên chưa tồn tại, tiếp tục lưu dữ liệu
                         DbQuery.saveUserData(name, new MyCompleteListener() {
                             @Override
                             public void onSuccess() {
@@ -262,15 +286,17 @@ public class AuthRepository {
         });
     }
 
-    public void loadCategories() {
+    public void loadCategories(MyCompleteListener listener) {
         DbQuery.loadCategories(new MyCompleteListener() {
             @Override
             public void onSuccess() {
                 categories.postValue(DbQuery.g_categoryList);
+                listener.onSuccess();
             }
             @Override
             public void onFailture() {
                 errorMessage.postValue("Failed to load categories");
+                listener.onFailture();
             }
         });
     }
@@ -326,17 +352,41 @@ public class AuthRepository {
     }
 
     public void loadBookMarks(MyCompleteListener listener) {
-        DbQuery.loadBookMarks(new MyCompleteListener() {
+        DbQuery.loadCategories(new MyCompleteListener() {
             @Override
             public void onSuccess() {
-                listener.onSuccess();
+                DbQuery.loadBmIds(new MyCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        DbQuery.loadBookMarks(new MyCompleteListener() {
+                            @Override
+                            public void onSuccess() {
+                                listener.onSuccess();
+                            }
+                            @Override
+                            public void onFailture() {
+                                errorMessage.postValue("Failed to load bookmarks");
+                                listener.onFailture();
+                            }
+                        });
+                    }
+                    @Override
+                    public void onFailture() {
+                        errorMessage.postValue("Failed to load bookmark IDs");
+                        listener.onFailture();
+                    }
+                });
             }
             @Override
             public void onFailture() {
-                errorMessage.postValue("Failed to load bookmarks");
+                errorMessage.postValue("Failed to load categories");
                 listener.onFailture();
             }
         });
+    }
+
+    public List<QuestionModel> getBookmarkList() {
+        return DbQuery.g_bookmarkList;
     }
 
     public List<TestModel> getCurrentTestList() {
@@ -351,6 +401,10 @@ public class AuthRepository {
         return DbQuery.g_selected_test_index;
     }
 
+    public void setSelectedTestIndex(int index) {
+        DbQuery.g_selected_test_index = index;
+    }
+
     public int getSelectedCategoryIndex() {
         return DbQuery.g_selectedCatIndex;
     }
@@ -360,16 +414,61 @@ public class AuthRepository {
     }
 
     public void updateBookmark(int questionIndex, boolean isBookmarked) {
-        QuestionModel question = DbQuery.g_questionList.get(questionIndex);
-        question.setBookMarked(isBookmarked);
-        if (isBookmarked) {
-            if (!DbQuery.g_bmIdList.contains(question.getQuestionId())) {
-                DbQuery.g_bmIdList.add(question.getQuestionId());
+        if (questionIndex >= 0 && questionIndex < DbQuery.g_questionList.size()) {
+            QuestionModel question = DbQuery.g_questionList.get(questionIndex);
+            question.setBookMarked(isBookmarked);
+            String questionId = question.getQuestionId();
+            if (isBookmarked) {
+                if (!DbQuery.g_bmIdList.contains(questionId)) {
+                    DbQuery.g_bmIdList.add(questionId);
+                    DbQuery.g_bookmarkList.add(new QuestionModel(
+                            question.getCategoryName(),
+                            question.getTestId(),
+                            question.getQuestionId(),
+                            question.getQuestion(),
+                            question.getOptionA(),
+                            question.getOptionB(),
+                            question.getOptionC(),
+                            question.getOptionD(),
+                            question.getCorrectOption(),
+                            question.getSelectedOption(),
+                            question.getStatus(),
+                            true
+                    ));
+                }
+            } else {
+                DbQuery.g_bmIdList.remove(questionId);
+                for (int i = 0; i < DbQuery.g_bookmarkList.size(); i++) {
+                    if (DbQuery.g_bookmarkList.get(i).getQuestionId().equals(questionId)) {
+                        DbQuery.g_bookmarkList.remove(i);
+                        break;
+                    }
+                }
             }
-        } else {
-            DbQuery.g_bmIdList.remove(question.getQuestionId());
+            DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+            updateBookmarkInFirestore();
         }
-        DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+    }
+
+    private void updateBookmarkInFirestore() {
+        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+        if (userId == null) {
+            return;
+        }
+        Map<String, Object> bmData = new ArrayMap<>();
+        for (int i = 0; i < DbQuery.g_bmIdList.size(); i++) {
+            bmData.put("BM" + (i + 1), DbQuery.g_bmIdList.get(i));
+        }
+        firestore.collection("USERS").document(userId)
+                .collection("USER_DATA").document("BOOKMARKS")
+                .set(bmData)
+                .addOnSuccessListener(aVoid -> {
+                    firestore.collection("USERS").document(userId)
+                            .update("BOOKMARKS", DbQuery.g_bmIdList.size());
+                })
+                .addOnFailureListener(e -> {
+                    errorMessage.postValue("Failed to update bookmark: " + e.getMessage());
+                });
     }
 
     public void saveTestResult(int score, MyCompleteListener listener) {
@@ -381,15 +480,35 @@ public class AuthRepository {
             if (question.isBookMarked()) {
                 if (!DbQuery.g_bmIdList.contains(question.getQuestionId())) {
                     DbQuery.g_bmIdList.add(question.getQuestionId());
-                    DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+                    DbQuery.g_bookmarkList.add(new QuestionModel(
+                            question.getCategoryName(),
+                            question.getTestId(),
+                            question.getQuestionId(),
+                            question.getQuestion(),
+                            question.getOptionA(),
+                            question.getOptionB(),
+                            question.getOptionC(),
+                            question.getOptionD(),
+                            question.getCorrectOption(),
+                            question.getSelectedOption(),
+                            question.getStatus(),
+                            true
+                    ));
                 }
             } else {
                 if (DbQuery.g_bmIdList.contains(question.getQuestionId())) {
                     DbQuery.g_bmIdList.remove(question.getQuestionId());
-                    DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+                    for (int i = 0; i < DbQuery.g_bookmarkList.size(); i++) {
+                        if (DbQuery.g_bookmarkList.get(i).getQuestionId().equals(question.getQuestionId())) {
+                            DbQuery.g_bookmarkList.remove(i);
+                            break;
+                        }
+                    }
                 }
             }
         }
+        DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+        updateBookmarkInFirestore();
     }
 
     public ScoreResult calculateScore() {
@@ -416,6 +535,7 @@ public class AuthRepository {
     public void clearData() {
         loginStatus.setValue(null);
         errorMessage.setValue(null);
+        userProfile.setValue(null);
         userPerformance.setValue(null);
         topUsers.setValue(null);
         userCount.setValue(null);

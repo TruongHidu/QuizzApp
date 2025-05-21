@@ -1,7 +1,5 @@
 package com.example.examapp.adapter;
 
-import static com.example.examapp.database.DbQuery.ANSWERED;
-import static com.example.examapp.database.DbQuery.UNANSWERED;
 
 import android.view.LayoutInflater;
 import android.view.View;

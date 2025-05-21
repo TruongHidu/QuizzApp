@@ -53,7 +53,10 @@ public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMa
         }
 
         public void bind(int position, QuestionModel question, BookMarkViewModel viewModel) {
-            binding.txtQuestionNo.setText("Question: " + (position + 1));
+            String categoryName = question.getCategoryName() != null ? question.getCategoryName() : "Unknown";
+            String testId = question.getTestId() != null ? question.getTestId() : "Unknown";
+            binding.txtQuestionNo.setText(categoryName + " - Test: " + testId);
+
             binding.txtQuestion.setText(question.getQuestion());
             binding.txtOptionA.setText("A. " + question.getOptionA());
             binding.txtOptionB.setText("B. " + question.getOptionB());
@@ -79,10 +82,9 @@ public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMa
             binding.txtResult.setText("Answer: " + correctAnswer);
             binding.txtResult.setTextColor(itemView.getContext().getColor(R.color.greenLight));
 
-            // Handle bookmark
-            binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_new);
+            binding.btnBookmark.setImageResource(question.isBookMarked() ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
             binding.btnBookmark.setColorFilter(ContextCompat.getColor(
-                    itemView.getContext(), R.color.colorPrimary));
+                    itemView.getContext(), question.isBookMarked() ? R.color.colorPrimary : R.color.gray_light));
 //            binding.btnBookmark.setOnClickListener(v -> {
 //                boolean newBookmarkState = !question.isBookMarked();
 //                viewModel.updateBookmark(position, newBookmarkState);

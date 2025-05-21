@@ -1,5 +1,6 @@
 package com.example.examapp.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -8,18 +9,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.example.examapp.R;
 import com.example.examapp.adapter.TestAdapter;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityTestBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
-import com.example.examapp.model.TestModel;
 import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.TestViewModel;
 
-import java.util.ArrayList;
-
-public class TestActivity extends AppCompatActivity {
+public class TestActivity extends AppCompatActivity implements TestAdapter.OnTestClickListener {
     private ActivityTestBinding binding;
     private TestViewModel viewModel;
     private TestAdapter adapter;
@@ -35,22 +31,23 @@ public class TestActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        if (DbQuery.g_categoryList != null && !DbQuery.g_categoryList.isEmpty()) {
-            getSupportActionBar().setTitle(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
+        progressDialogUtil = new ProgressDialogUtil(this);
+        progressDialogUtil.show("Loading ...");
+
+        viewModel = new ViewModelProvider(this).get(TestViewModel.class);
+
+        // Set toolbar title using ViewModel
+        if (!viewModel.getCurrentCategoryList().isEmpty()) {
+            getSupportActionBar().setTitle(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
         } else {
             getSupportActionBar().setTitle("Tests");
         }
 
-        progressDialogUtil = new ProgressDialogUtil(this);
-        progressDialogUtil.show("Loading ...");
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         binding.rcvTest.setLayoutManager(layoutManager);
-        adapter = new TestAdapter(new ArrayList<>());
+        adapter = new TestAdapter(viewModel.getCurrentTestList(), this);
         binding.rcvTest.setAdapter(adapter);
-
-        viewModel = new ViewModelProvider(this).get(TestViewModel.class);
 
         viewModel.getTests().observe(this, tests -> {
             progressDialogUtil.dismiss();
@@ -68,11 +65,15 @@ public class TestActivity extends AppCompatActivity {
             }
         });
 
-        DbQuery.initFirestore();
-        if (DbQuery.g_categoryList.isEmpty()) {
-            DbQuery.loadCategories(new MyCompleteListener() {
+        // Load categories if empty, then load tests
+        if (viewModel.getCurrentCategoryList().isEmpty()) {
+            viewModel.loadCategories(new MyCompleteListener() {
                 @Override
                 public void onSuccess() {
+                    // Update toolbar title after categories load
+                    if (!viewModel.getCurrentCategoryList().isEmpty()) {
+                        getSupportActionBar().setTitle(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
+                    }
                     viewModel.loadTestData();
                 }
 
@@ -85,6 +86,13 @@ public class TestActivity extends AppCompatActivity {
         } else {
             viewModel.loadTestData();
         }
+    }
+
+    @Override
+    public void onTestClicked(int position) {
+        viewModel.setSelectedTestIndex(position);
+        Intent intent = new Intent(this, StartTestActivity.class);
+        startActivity(intent);
     }
 
     @Override

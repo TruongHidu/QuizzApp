@@ -3,6 +3,7 @@ package com.example.examapp.viewmodel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.CategoryModel;
 import com.example.examapp.repository.AuthRepository;
 
@@ -24,6 +25,16 @@ public class CategoryViewModel extends ViewModel {
     }
 
     public void loadCategories() {
-        authRepository.loadCategories();
+        authRepository.loadCategories(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                // No-op: LiveData will notify observers
+            }
+
+            @Override
+            public void onFailture() {
+                // No-op: Error message LiveData will notify observers
+            }
+        });
     }
 }

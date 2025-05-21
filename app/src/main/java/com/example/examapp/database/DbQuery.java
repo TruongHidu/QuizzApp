@@ -98,18 +98,12 @@ public class DbQuery {
 
         Map<String, Object> profileData = new ArrayMap<>();
         profileData.put("NAME", name);
-//        if (phone != null) {
-//            profileData.put("PHONE", phone);
-//        }
         ensureFirestoreInitialized();
         g_firestore.collection("USERS").document(userId)
                 .update(profileData)
                 .addOnSuccessListener(unused -> {
                     myProfile.setName(name);
                     myPerformanece.setName(name);
-//                    if (phone != null) {
-//                        myProfile.setPhone(phone);
-//                    }
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailture());
@@ -187,7 +181,18 @@ public class DbQuery {
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
+                            String categoryId = documentSnapshot.getString("CATEGORY");
+                            String testId = documentSnapshot.getString("TEST");
+                            String categoryName = "Unknown";
+                            for (CategoryModel category : g_categoryList) {
+                                if (category.getDocId().equals(categoryId)) {
+                                    categoryName = category.getName();
+                                    break;
+                                }
+                            }
                             g_bookmarkList.add(new QuestionModel(
+                                    categoryName,
+                                    testId,
                                     documentSnapshot.getId(),
                                     documentSnapshot.getString("QUESTION"),
                                     documentSnapshot.getString("A"),
@@ -195,9 +200,9 @@ public class DbQuery {
                                     documentSnapshot.getString("C"),
                                     documentSnapshot.getString("D"),
                                     documentSnapshot.getLong("ANSWER").intValue(),
-                                    0,
                                     -1,
-                                    false
+                                    NOT_VISITED,
+                                    true
                             ));
                         }
                         if (tmp.incrementAndGet() == g_bmIdList.size()) {
@@ -243,7 +248,6 @@ public class DbQuery {
                         rank++;
                     }
 
-                    // Nếu người dùng không trong top 20, lấy TOTAL_SCORE từ tài liệu người dùng
                     if (!isMeOnTopList) {
                         g_firestore.collection("USERS").document(userId)
                                 .get()
@@ -401,14 +405,18 @@ public class DbQuery {
     public static void loadQuestions(MyCompleteListener listener) {
         g_questionList.clear();
         ensureFirestoreInitialized();
+        String categoryName = g_categoryList.get(g_selectedCatIndex).getName();
+        String testId = g_testList.get(g_selected_test_index).getTestId();
         g_firestore.collection("Question")
                 .whereEqualTo("CATEGORY", g_categoryList.get(g_selectedCatIndex).getDocId())
-                .whereEqualTo("TEST", g_testList.get(g_selected_test_index).getTestId())
+                .whereEqualTo("TEST", testId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         boolean isBookMarked = g_bmIdList.contains(doc.getId());
                         g_questionList.add(new QuestionModel(
+                                categoryName,
+                                testId,
                                 doc.getId(),
                                 doc.getString("QUESTION"),
                                 doc.getString("A"),

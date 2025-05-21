@@ -11,9 +11,9 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityMyProfileBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.model.ProfileModel;
 import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.AuthViewModel;
 
@@ -21,7 +21,7 @@ public class MyProfileActivity extends AppCompatActivity {
     private ActivityMyProfileBinding binding;
     private AuthViewModel viewModel;
     private ProgressDialogUtil progressDialog;
-    private String nameStr, phoneStr;
+    private String nameStr;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,34 +37,43 @@ public class MyProfileActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("Profile");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        disableEditing();
-        addEvent();
+        // Load user profile data
+        viewModel.loadUserProfile();
 
+        // Observe profile data
+        viewModel.getUserProfile().observe(this, profile -> {
+            if (profile != null) {
+                disableEditing(profile);
+            } else {
+                Toast.makeText(MyProfileActivity.this, "Failed to load profile data", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Observe error messages
         viewModel.getErrorMessage().observe(this, error -> {
             progressDialog.dismiss();
             Toast.makeText(MyProfileActivity.this, error, Toast.LENGTH_LONG).show();
         });
+
+        addEvent();
     }
 
-    private void disableEditing() {
+    private void disableEditing(ProfileModel profile) {
         binding.txtProfileEmail.setEnabled(false);
         binding.txtProfileName.setEnabled(false);
-//        binding.txtProfilePhone.setEnabled(false);
         binding.btnSave.setVisibility(View.GONE);
         binding.btnEdit.setVisibility(View.VISIBLE);
         binding.btnCancel.setVisibility(View.GONE);
 
-        binding.txtProfileName.setText(DbQuery.myProfile.getName());
-        binding.txtProfileEmail.setText(DbQuery.myProfile.getEmail());
-//        if (DbQuery.myProfile.getPhone() != null) {
-//            binding.txtProfilePhone.setText(DbQuery.myProfile.getPhone());
-//        }
-        String profileName = DbQuery.myProfile.getName();
-        binding.profileText.setText(profileName.toUpperCase().substring(0, 1));
+        binding.txtProfileName.setText(profile.getName());
+        binding.txtProfileEmail.setText(profile.getEmail());
+        String profileName = profile.getName();
+        binding.profileText.setText(profileName != null && !profileName.isEmpty() ?
+                profileName.toUpperCase().substring(0, 1) : "NA");
     }
 
     private void addEvent() {
-        binding.btnCancel.setOnClickListener(view -> disableEditing());
+        binding.btnCancel.setOnClickListener(view -> viewModel.loadUserProfile()); // Reload profile to reset fields
 
         binding.btnEdit.setOnClickListener(view -> {
             view.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100)
@@ -82,26 +91,22 @@ public class MyProfileActivity extends AppCompatActivity {
 
     private void saveData() {
         progressDialog.show("Saving...");
-//        if (phoneStr.isEmpty()) {
-//            phoneStr = null;
-//        }
         viewModel.saveUserData(nameStr, new MyCompleteListener() {
             @Override
             public void onSuccess() {
                 progressDialog.dismiss();
                 Toast.makeText(MyProfileActivity.this, "Data saved successfully!", Toast.LENGTH_SHORT).show();
-                disableEditing();
+                viewModel.loadUserProfile(); // Reload profile to update UI
             }
             @Override
             public void onFailture() {
-                // Lỗi được xử lý qua errorMessage LiveData
+                // Error handled via errorMessage LiveData
             }
         });
     }
 
     private void enableEditing() {
         binding.txtProfileName.setEnabled(true);
-//        binding.txtProfilePhone.setEnabled(true);
         binding.btnSave.setVisibility(View.VISIBLE);
         binding.btnEdit.setVisibility(View.GONE);
         binding.btnCancel.setVisibility(View.VISIBLE);
@@ -109,20 +114,10 @@ public class MyProfileActivity extends AppCompatActivity {
 
     private boolean validate() {
         nameStr = binding.txtProfileName.getText().toString().trim();
-//        phoneStr = binding.txtProfilePhone.getText().toString().trim();
         if (nameStr.isEmpty()) {
             binding.txtProfileName.setError("Please enter your name");
             return false;
         }
-//        if (!phoneStr.isEmpty()) {
-//            if (phoneStr.length() != 10 || !phoneStr.matches("[0-9]+")) {
-//                binding.txtProfilePhone.setError("Phone number must be 10 digits !");
-//                return false;
-//            }
-//        }else{
-//            binding.txtProfilePhone.setError("Please enter your phone number");
-//            return false;
-//        }
         return true;
     }
 
@@ -131,6 +126,7 @@ public class MyProfileActivity extends AppCompatActivity {
         finish();
         return true;
     }
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
@@ -142,7 +138,6 @@ public class MyProfileActivity extends AppCompatActivity {
                 float y = ev.getRawY() + v.getTop() - location[1];
 
                 if (x < v.getLeft() || x > v.getRight() || y < v.getTop() || y > v.getBottom()) {
-                    // Ẩn bàn phím
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     if (imm != null) {
                         imm.hideSoftInputFromWindow(v.getWindowToken(), 0);

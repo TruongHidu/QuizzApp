@@ -1,5 +1,7 @@
 package com.example.examapp.model;
 
+import com.example.examapp.utils.QuestionStatus;
+
 public class QuestionModel {
     private String questionId;
     private String question;
@@ -7,12 +9,43 @@ public class QuestionModel {
     private String optionB;
     private String optionC;
     private String optionD;
-
     private int correctOption;
-
     private int selectedOption;
-    private  int status;
+    private int status;
     private boolean isBookMarked;
+    private String categoryName;
+    private String testId;
+
+    public QuestionModel() {
+        this.selectedOption = -1;
+        this.status = QuestionStatus.NOT_VISITED;
+        this.isBookMarked = false;
+    }
+
+    public QuestionModel(String categoryName, String testId, String questionId, String question,
+                         String optionA, String optionB, String optionC, String optionD,
+                         int correctOption, int selectedOption, int status, boolean isBookMarked) {
+        this.categoryName = categoryName;
+        this.testId = testId;
+        this.questionId = questionId;
+        this.question = question;
+        this.optionA = optionA;
+        this.optionB = optionB;
+        this.optionC = optionC;
+        this.optionD = optionD;
+        this.correctOption = correctOption;
+        this.selectedOption = selectedOption;
+        this.status = status;
+        this.isBookMarked = isBookMarked;
+    }
+
+    public String getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(String questionId) {
+        this.questionId = questionId;
+    }
 
     public String getQuestion() {
         return question;
@@ -54,6 +87,14 @@ public class QuestionModel {
         this.optionD = optionD;
     }
 
+    public int getCorrectOption() {
+        return correctOption;
+    }
+
+    public void setCorrectOption(int correctOption) {
+        this.correctOption = correctOption;
+    }
+
     public int getSelectedOption() {
         return selectedOption;
     }
@@ -74,37 +115,23 @@ public class QuestionModel {
         return isBookMarked;
     }
 
-    public String getQuestionId() {
-        return questionId;
-    }
-
-    public void setQuestionId(String questionId) {
-        this.questionId = questionId;
-    }
-
     public void setBookMarked(boolean bookMarked) {
         isBookMarked = bookMarked;
     }
 
-    public int getCorrectOption() {
-        return correctOption;
+    public String getCategoryName() {
+        return categoryName;
     }
 
-    public void setCorrectOption(int correctOption) {
-        this.correctOption = correctOption;
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
     }
 
-    public QuestionModel(String questionId, String question, String optionA, String optionB, String optionC, String optionD, int correctOption, int selectedOption, int status, boolean isBookMarked) {
-        this.questionId = questionId;
-        this.question = question;
-        this.optionA = optionA;
-        this.optionB = optionB;
-        this.optionC = optionC;
-        this.optionD = optionD;
-        this.correctOption = correctOption;
-        this.selectedOption = selectedOption;
-        this.status = status;
-        this.isBookMarked = isBookMarked;
+    public String getTestId() {
+        return testId;
+    }
 
+    public void setTestId(String testId) {
+        this.testId = testId;
     }
 }

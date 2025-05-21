@@ -3,12 +3,12 @@ package com.example.examapp.viewmodel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.CategoryModel;
 import com.example.examapp.model.QuestionModel;
 import com.example.examapp.model.TestModel;
 import com.example.examapp.repository.AuthRepository;
+import com.example.examapp.utils.QuestionStatus;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -30,6 +30,10 @@ public class TestViewModel extends ViewModel {
 
     public void loadTestData() {
         authRepository.loadTestData();
+    }
+
+    public void loadCategories(MyCompleteListener listener) {
+        authRepository.loadCategories(listener);
     }
 
     public void loadQuestions(MyCompleteListener listener) {
@@ -63,15 +67,15 @@ public class TestViewModel extends ViewModel {
     public void clearSelection(int questionIndex) {
         QuestionModel question = authRepository.getCurrentQuestionList().get(questionIndex);
         question.setSelectedOption(-1);
-        question.setStatus(DbQuery.UNANSWERED);
+        question.setStatus(QuestionStatus.UNANSWERED);
     }
 
     public void markForReview(int questionIndex, boolean isMarked) {
         QuestionModel question = authRepository.getCurrentQuestionList().get(questionIndex);
         if (isMarked) {
-            question.setStatus(DbQuery.HIGHTLIGHTED);
+            question.setStatus(QuestionStatus.HIGHTLIGHTED);
         } else {
-            question.setStatus(question.getSelectedOption() != -1 ? DbQuery.ANSWERED : DbQuery.UNANSWERED);
+            question.setStatus(question.getSelectedOption() != -1 ? QuestionStatus.ANSWERED : QuestionStatus.UNANSWERED);
         }
     }
 
@@ -85,8 +89,11 @@ public class TestViewModel extends ViewModel {
     public void resetQuestionsForReAttempt() {
         for (QuestionModel question : authRepository.getCurrentQuestionList()) {
             question.setSelectedOption(-1);
-            question.setStatus(DbQuery.NOT_VISITED);
+            question.setStatus(QuestionStatus.NOT_VISITED);
         }
     }
 
+    public void setSelectedTestIndex(int index) {
+        authRepository.setSelectedTestIndex(index);
+    }
 }

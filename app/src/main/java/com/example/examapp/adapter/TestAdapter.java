@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
 import com.example.examapp.activities.StartTestActivity;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.model.TestModel;
 
 import java.util.ArrayList;
@@ -20,9 +19,15 @@ import java.util.List;
 
 public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder> {
     private List<TestModel> testList;
+    private final OnTestClickListener clickListener;
 
-    public TestAdapter(List<TestModel> testList) {
+    public interface OnTestClickListener {
+        void onTestClicked(int position);
+    }
+
+    public TestAdapter(List<TestModel> testList, OnTestClickListener clickListener) {
         this.testList = new ArrayList<>(testList);
+        this.clickListener = clickListener;
     }
 
     public void updateData(List<TestModel> newTestList) {
@@ -48,7 +53,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
         return testList.size();
     }
 
-    public static class TestViewHolder extends RecyclerView.ViewHolder {
+    public class TestViewHolder extends RecyclerView.ViewHolder {
         private TextView testNo;
         private ProgressBar testProgressBar;
         private TextView txtScore;
@@ -67,11 +72,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
             txtScore.setText(testModel.getTopScore() + "%");
             testProgressBar.setProgress(testModel.getTopScore());
 
-            itemView.setOnClickListener(view -> {
-                DbQuery.g_selected_test_index = getAdapterPosition();
-                Intent intent = new Intent(itemView.getContext(), StartTestActivity.class);
-                itemView.getContext().startActivity(intent);
-            });
+            itemView.setOnClickListener(view -> clickListener.onTestClicked(getAdapterPosition()));
         }
     }
 }

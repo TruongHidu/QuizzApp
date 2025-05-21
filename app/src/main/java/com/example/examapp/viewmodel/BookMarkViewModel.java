@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.QuestionModel;
 import com.example.examapp.repository.AuthRepository;
@@ -30,7 +29,7 @@ public class BookMarkViewModel extends ViewModel {
                 authRepository.loadBookMarks(new MyCompleteListener() {
                     @Override
                     public void onSuccess() {
-                        bookmarkList.postValue(DbQuery.g_bookmarkList);
+                        bookmarkList.postValue(authRepository.getBookmarkList());
                         listener.onSuccess();
                     }
 
@@ -50,6 +49,6 @@ public class BookMarkViewModel extends ViewModel {
 
     public void updateBookmark(int questionIndex, boolean isBookmarked) {
         authRepository.updateBookmark(questionIndex, isBookmarked);
-        bookmarkList.postValue(DbQuery.g_bookmarkList); // Update LiveData
+        bookmarkList.postValue(authRepository.getBookmarkList());
     }
 }

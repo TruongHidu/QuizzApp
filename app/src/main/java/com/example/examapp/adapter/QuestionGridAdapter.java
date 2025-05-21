@@ -1,10 +1,5 @@
 package com.example.examapp.adapter;
 
-import static com.example.examapp.database.DbQuery.ANSWERED;
-import static com.example.examapp.database.DbQuery.HIGHTLIGHTED;
-import static com.example.examapp.database.DbQuery.NOT_VISITED;
-import static com.example.examapp.database.DbQuery.UNANSWERED;
-
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
@@ -17,6 +12,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.examapp.R;
 import com.example.examapp.model.QuestionModel;
+import com.example.examapp.utils.QuestionStatus;
 
 import java.util.List;
 
@@ -80,16 +76,16 @@ public class QuestionGridAdapter extends BaseAdapter {
             int status = questionList.get(position).getStatus();
             int colorRes;
             switch (status) {
-                case NOT_VISITED:
+                case QuestionStatus.NOT_VISITED:
                     colorRes = R.color.gray;
                     break;
-                case UNANSWERED:
+                case QuestionStatus.UNANSWERED:
                     colorRes = R.color.red;
                     break;
-                case ANSWERED:
+                case QuestionStatus.ANSWERED:
                     colorRes = R.color.green;
                     break;
-                case HIGHTLIGHTED:
+                case QuestionStatus.HIGHTLIGHTED:
                     colorRes = R.color.colorPrimary; // Đồng bộ với question_list_layout.xml
                     break;
                 default:

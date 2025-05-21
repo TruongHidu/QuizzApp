@@ -1,13 +1,9 @@
 package com.example.examapp.activities;
 
-import static com.example.examapp.database.DbQuery.ANSWERED;
-import static com.example.examapp.database.DbQuery.HIGHTLIGHTED;
-import static com.example.examapp.database.DbQuery.NOT_VISITED;
-import static com.example.examapp.database.DbQuery.UNANSWERED;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
@@ -30,12 +26,15 @@ import androidx.recyclerview.widget.SnapHelper;
 import com.example.examapp.R;
 import com.example.examapp.adapter.QuestionAdapter;
 import com.example.examapp.adapter.QuestionGridAdapter;
+import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.utils.QuestionStatus;
 import com.example.examapp.viewmodel.TestViewModel;
 
 import java.util.concurrent.TimeUnit;
 
 public class QuestionActivity extends AppCompatActivity {
+    private static final String TAG = "QuestionActivity";
     private TestViewModel viewModel;
     private QuestionAdapter adapter;
     private QuestionGridAdapter questionGridAdapter;
@@ -56,12 +55,10 @@ public class QuestionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.question_list_layout);
 
-
         progressDialogUtil = new ProgressDialogUtil(this);
-
+        progressDialogUtil.show("Loading questions...");
 
         viewModel = new ViewModelProvider(this).get(TestViewModel.class);
-
 
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {
@@ -70,9 +67,22 @@ public class QuestionActivity extends AppCompatActivity {
             }
         });
 
-        init();
-        setupUI();
-        startTimer();
+        viewModel.loadQuestions(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                progressDialogUtil.dismiss();
+                init();
+                setupUI();
+                startTimer();
+            }
+
+            @Override
+            public void onFailture() {
+                progressDialogUtil.dismiss();
+                Toast.makeText(QuestionActivity.this, "Failed to load questions", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
     }
 
     private void init() {
@@ -99,7 +109,7 @@ public class QuestionActivity extends AppCompatActivity {
         txtCatName.setText(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
         txtQuestId.setText((questionId + 1) + "/" + viewModel.getCurrentQuestionList().size());
 
-        viewModel.getCurrentQuestionList().get(questionId).setStatus(UNANSWERED);
+        viewModel.getCurrentQuestionList().get(questionId).setStatus(QuestionStatus.UNANSWERED);
         updateBookmarkUI();
 
         questionGridAdapter = new QuestionGridAdapter(this, viewModel.getCurrentQuestionList(), position -> goToQuestion(position));
@@ -109,7 +119,7 @@ public class QuestionActivity extends AppCompatActivity {
             @Override
             public void onOptionSelected(int position, int selectedOption) {
                 viewModel.getCurrentQuestionList().get(position).setSelectedOption(selectedOption);
-                viewModel.getCurrentQuestionList().get(position).setStatus(ANSWERED);
+                viewModel.getCurrentQuestionList().get(position).setStatus(QuestionStatus.ANSWERED);
                 adapter.notifyItemChanged(position);
                 questionGridAdapter.notifyDataSetChanged();
             }
@@ -117,7 +127,7 @@ public class QuestionActivity extends AppCompatActivity {
             @Override
             public void onOptionCleared(int position) {
                 viewModel.getCurrentQuestionList().get(position).setSelectedOption(-1);
-                viewModel.getCurrentQuestionList().get(position).setStatus(UNANSWERED);
+                viewModel.getCurrentQuestionList().get(position).setStatus(QuestionStatus.UNANSWERED);
                 adapter.notifyItemChanged(position);
                 questionGridAdapter.notifyDataSetChanged();
             }
@@ -173,6 +183,7 @@ public class QuestionActivity extends AppCompatActivity {
         btnClear.setOnClickListener(view -> {
             viewModel.clearSelection(questionId);
             adapter.notifyItemChanged(questionId);
+            questionGridAdapter.notifyDataSetChanged();
         });
 
         btnListQuestion.setOnClickListener(view -> {
@@ -193,12 +204,16 @@ public class QuestionActivity extends AppCompatActivity {
             viewModel.markForReview(questionId, isMarked);
             btnMarkImage.setVisibility(isMarked ? View.VISIBLE : View.GONE);
             adapter.notifyItemChanged(questionId);
+            questionGridAdapter.notifyDataSetChanged();
         });
 
         btnBookMark.setOnClickListener(view -> {
+            Log.d(TAG, "Bookmark clicked for questionId: " + questionId);
             boolean isBookmarked = !viewModel.getCurrentQuestionList().get(questionId).isBookMarked();
             viewModel.updateBookmark(questionId, isBookmarked);
             updateBookmarkUI();
+            adapter.notifyItemChanged(questionId);
+            questionGridAdapter.notifyDataSetChanged();
         });
     }
 
@@ -247,6 +262,7 @@ public class QuestionActivity extends AppCompatActivity {
         }
         updateBookmarkUI();
         adapter.notifyItemChanged(position);
+        questionGridAdapter.notifyDataSetChanged();
     }
 
     private void setSnapHelper() {
@@ -259,15 +275,17 @@ public class QuestionActivity extends AppCompatActivity {
                 super.onScrollStateChanged(recyclerView, newState);
                 View view = snapHelper.findSnapView(rcvQuestion.getLayoutManager());
                 questionId = rcvQuestion.getLayoutManager().getPosition(view);
-                if (viewModel.getCurrentQuestionList().get(questionId).getStatus() == NOT_VISITED) {
-                    viewModel.getCurrentQuestionList().get(questionId).setStatus(UNANSWERED);
+                if (viewModel.getCurrentQuestionList().get(questionId).getStatus() == QuestionStatus.NOT_VISITED) {
+                    viewModel.getCurrentQuestionList().get(questionId).setStatus(QuestionStatus.UNANSWERED);
                 }
                 btnMarkImage.setVisibility(
-                        viewModel.getCurrentQuestionList().get(questionId).getStatus() == HIGHTLIGHTED
+                        viewModel.getCurrentQuestionList().get(questionId).getStatus() == QuestionStatus.HIGHTLIGHTED
                                 ? View.VISIBLE : View.GONE
                 );
                 txtQuestId.setText((questionId + 1) + "/" + viewModel.getCurrentQuestionList().size());
                 updateBookmarkUI();
+                adapter.notifyItemChanged(questionId);
+                questionGridAdapter.notifyDataSetChanged();
             }
         });
     }

@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.examapp.activities.BookMarkActivity;
 import com.example.examapp.activities.LoginActivity;
 import com.example.examapp.activities.MyProfileActivity;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.FragmentAccountBinding;
 import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.AccountViewModel;
@@ -36,10 +35,11 @@ public class AccountFragment extends Fragment {
         progressDialogUtil = new ProgressDialogUtil(getContext());
         progressDialogUtil.show("Loading ...");
 
-        // Set initial profile data
-        updateProfileUI();
-
         // Observe ViewModel data
+        viewModel.getUserProfile().observe(getViewLifecycleOwner(), profile -> {
+            updateProfileUI(profile != null ? profile.getName() : null);
+        });
+
         viewModel.getUserPerformance().observe(getViewLifecycleOwner(), performance -> {
             progressDialogUtil.dismiss();
             if (performance != null && performance.getRank() > 0) {
@@ -98,12 +98,11 @@ public class AccountFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        updateProfileUI();
+        viewModel.loadAccountData(); // Reload profile data to ensure UI is up-to-date
     }
 
-    private void updateProfileUI() {
-        String name = DbQuery.myProfile != null ? DbQuery.myProfile.getName() : "";
-        binding.txtName.setText(name);
+    private void updateProfileUI(String name) {
+        binding.txtName.setText(name != null && !name.isEmpty() ? name : "");
         binding.imgName.setText(name != null && !name.isEmpty() ? name.toUpperCase().substring(0, 1) : "N");
     }
 
