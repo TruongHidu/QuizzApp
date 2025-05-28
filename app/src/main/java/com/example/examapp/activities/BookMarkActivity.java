@@ -3,8 +3,10 @@ package com.example.examapp.activities;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -52,6 +54,19 @@ public class BookMarkActivity extends AppCompatActivity {
 
         viewModel.getBookmarkList().observe(this, questions -> {
             adapter.notifyDataSetChanged();
+            if (questions == null || questions.isEmpty()) {
+                binding.rcvAnswerBookmark.setVisibility(View.GONE);
+                binding.emptyTextView.setVisibility(View.VISIBLE);
+            } else {
+                binding.rcvAnswerBookmark.setVisibility(View.VISIBLE);
+                binding.emptyTextView.setVisibility(View.GONE);
+            }
+        });
+
+        viewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
         });
 
         viewModel.loadBookMarks(new MyCompleteListener() {
@@ -63,6 +78,7 @@ public class BookMarkActivity extends AppCompatActivity {
             @Override
             public void onFailture() {
                 progressDialog.dismiss();
+                Toast.makeText(BookMarkActivity.this, "Failed to load bookmarks", Toast.LENGTH_SHORT).show();
             }
         });
     }

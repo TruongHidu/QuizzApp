@@ -22,6 +22,11 @@ public class BookMarkViewModel extends ViewModel {
         return bookmarkList;
     }
 
+    public LiveData<String> getErrorMessage() {
+        return authRepository.getErrorMessage();
+    }
+
+
     public void loadBookMarks(MyCompleteListener listener) {
         authRepository.loadBmIds(new MyCompleteListener() {
             @Override
@@ -47,8 +52,17 @@ public class BookMarkViewModel extends ViewModel {
         });
     }
 
-    public void updateBookmark(int questionIndex, boolean isBookmarked) {
-        authRepository.updateBookmark(questionIndex, isBookmarked);
+    public void updateBookmark(int bookmarkIndex, boolean isBookmarked) {
+        List<QuestionModel> currentBookmarks = bookmarkList.getValue();
+        if (currentBookmarks != null && bookmarkIndex >= 0 && bookmarkIndex < currentBookmarks.size()) {
+            String questionId = currentBookmarks.get(bookmarkIndex).getQuestionId();
+            authRepository.unbookmarkByQuestionId(questionId);
+            bookmarkList.postValue(authRepository.getBookmarkList());
+        }
+    }
+
+    public void rebookmarkQuestion(QuestionModel question) {
+        authRepository.rebookmarkByQuestionId(question);
         bookmarkList.postValue(authRepository.getBookmarkList());
     }
 }

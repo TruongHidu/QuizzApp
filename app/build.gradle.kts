@@ -54,6 +54,9 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
+    implementation ("com.google.android.material:material:1.11.0")
+
+
 
     implementation ("androidx.lifecycle:lifecycle-viewmodel:2.6.2")
     implementation ("androidx.lifecycle:lifecycle-livedata:2.6.2")

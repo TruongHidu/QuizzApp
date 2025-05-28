@@ -214,6 +214,12 @@ public class QuestionActivity extends AppCompatActivity {
             updateBookmarkUI();
             adapter.notifyItemChanged(questionId);
             questionGridAdapter.notifyDataSetChanged();
+            // Hiển thị Toast dựa trên trạng thái bookmark
+            Toast.makeText(
+                    QuestionActivity.this,
+                    isBookmarked ? "Saved this question!" : "Unsaved this question!",
+                    Toast.LENGTH_SHORT
+            ).show();
         });
     }
 

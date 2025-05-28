@@ -1,5 +1,6 @@
 package com.example.examapp.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -11,10 +12,12 @@ import com.example.examapp.R;
 import com.example.examapp.databinding.AnswerItemLayoutBinding;
 import com.example.examapp.model.QuestionModel;
 import com.example.examapp.viewmodel.BookMarkViewModel;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
 public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMarkViewHolder> {
+    private static final String TAG = "BookMarkAdapter";
     private final BookMarkViewModel viewModel;
 
     public BookMarkAdapter(BookMarkViewModel viewModel) {
@@ -44,7 +47,7 @@ public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMa
         return questionList != null ? questionList.size() : 0;
     }
 
-    public static class BookMarkViewHolder extends RecyclerView.ViewHolder {
+    public class BookMarkViewHolder extends RecyclerView.ViewHolder {
         private final AnswerItemLayoutBinding binding;
 
         public BookMarkViewHolder(@NonNull AnswerItemLayoutBinding binding) {
@@ -85,14 +88,40 @@ public class BookMarkAdapter extends RecyclerView.Adapter<BookMarkAdapter.BookMa
             binding.btnBookmark.setImageResource(question.isBookMarked() ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
             binding.btnBookmark.setColorFilter(ContextCompat.getColor(
                     itemView.getContext(), question.isBookMarked() ? R.color.colorPrimary : R.color.gray_light));
-//            binding.btnBookmark.setOnClickListener(v -> {
-//                boolean newBookmarkState = !question.isBookMarked();
-//                viewModel.updateBookmark(position, newBookmarkState);
-//                question.setBookMarked(newBookmarkState);
-//                binding.btnBookmark.setImageResource(newBookmarkState ? R.drawable.ic_bookmark_new : R.drawable.ic_bookmark_border);
-//                binding.btnBookmark.setColorFilter(ContextCompat.getColor(
-//                        itemView.getContext(), newBookmarkState ? R.color.colorPrimary : R.color.gray_light));
-//            });
+
+            binding.btnBookmark.setOnClickListener(v -> {
+                Log.d(TAG, "Unbookmarking question at position: " + position + ", questionId: " + question.getQuestionId());
+                QuestionModel removedQuestion = new QuestionModel(
+                        question.getCategoryName(),
+                        question.getTestId(),
+                        question.getQuestionId(),
+                        question.getQuestion(),
+                        question.getOptionA(),
+                        question.getOptionB(),
+                        question.getOptionC(),
+                        question.getOptionD(),
+                        question.getCorrectOption(),
+                        question.getSelectedOption(),
+                        question.getStatus(),
+                        true
+                );
+                viewModel.updateBookmark(position, false); // Unbookmark the question
+                BookMarkAdapter.this.notifyItemRemoved(position);
+                BookMarkAdapter.this.notifyItemRangeChanged(position, getItemCount());
+
+                Snackbar snackbar = Snackbar.make(
+                        binding.getRoot(),
+                        "Unmarked question!",
+                        Snackbar.LENGTH_LONG
+                );
+                snackbar.setAction("Yes", view -> {
+                    Log.d(TAG, "Undo unmarked for questionId: " + removedQuestion.getQuestionId());
+                    viewModel.rebookmarkQuestion(removedQuestion);
+                    BookMarkAdapter.this.notifyItemInserted(position);
+                    BookMarkAdapter.this.notifyItemRangeChanged(position, getItemCount());
+                });
+                snackbar.show();
+            });
         }
     }
 }

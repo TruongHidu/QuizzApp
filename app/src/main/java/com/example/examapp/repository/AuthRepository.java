@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import android.util.ArrayMap;
+import android.util.Log;
 
 public class AuthRepository {
+    private static final String TAG = "AuthRepository";
     private FirebaseAuth mAuth;
     private FirebaseFirestore firestore;
 
@@ -450,9 +452,63 @@ public class AuthRepository {
         }
     }
 
+    public void unbookmarkByQuestionId(String questionId) {
+        Log.d(TAG, "Unbookmark questionId: " + questionId);
+        // Update g_questionList
+        for (QuestionModel question : DbQuery.g_questionList) {
+            if (question.getQuestionId().equals(questionId)) {
+                question.setBookMarked(false);
+                break;
+            }
+        }
+        // Update g_bmIdList and g_bookmarkList
+        DbQuery.g_bmIdList.remove(questionId);
+        for (int i = 0; i < DbQuery.g_bookmarkList.size(); i++) {
+            if (DbQuery.g_bookmarkList.get(i).getQuestionId().equals(questionId)) {
+                DbQuery.g_bookmarkList.remove(i);
+                break;
+            }
+        }
+        DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+        updateBookmarkInFirestore();
+    }
+
+    public void rebookmarkByQuestionId(QuestionModel question) {
+        Log.d(TAG, "Rebookmark questionId: " + question.getQuestionId());
+        String questionId = question.getQuestionId();
+        // Update g_questionList
+        for (QuestionModel q : DbQuery.g_questionList) {
+            if (q.getQuestionId().equals(questionId)) {
+                q.setBookMarked(true);
+                break;
+            }
+        }
+        // Update g_bmIdList and g_bookmarkList
+        if (!DbQuery.g_bmIdList.contains(questionId)) {
+            DbQuery.g_bmIdList.add(questionId);
+            DbQuery.g_bookmarkList.add(new QuestionModel(
+                    question.getCategoryName(),
+                    question.getTestId(),
+                    question.getQuestionId(),
+                    question.getQuestion(),
+                    question.getOptionA(),
+                    question.getOptionB(),
+                    question.getOptionC(),
+                    question.getOptionD(),
+                    question.getCorrectOption(),
+                    question.getSelectedOption(),
+                    question.getStatus(),
+                    true
+            ));
+        }
+        DbQuery.myProfile.setBookmarkCount(DbQuery.g_bmIdList.size());
+        updateBookmarkInFirestore();
+    }
+
     private void updateBookmarkInFirestore() {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
         if (userId == null) {
+            Log.w(TAG, "User not logged in, skipping Firestore update");
             return;
         }
         Map<String, Object> bmData = new ArrayMap<>();
@@ -465,9 +521,11 @@ public class AuthRepository {
                 .addOnSuccessListener(aVoid -> {
                     firestore.collection("USERS").document(userId)
                             .update("BOOKMARKS", DbQuery.g_bmIdList.size());
+                    Log.d(TAG, "Firestore bookmark update successful");
                 })
                 .addOnFailureListener(e -> {
                     errorMessage.postValue("Failed to update bookmark: " + e.getMessage());
+                    Log.e(TAG, "Firestore bookmark update failed: " + e.getMessage());
                 });
     }
 
