@@ -91,7 +91,7 @@ public class StartTestActivity extends AppCompatActivity {
         List<TestModel> testList = viewModel.getCurrentTestList();
         int selectedTestIndex = viewModel.getSelectedTestIndex();
         if (testList != null && selectedTestIndex < testList.size()) {
-            binding.txtTestNO.setText("Test " + testList.get(selectedTestIndex).getTestId());
+            binding.txtTestNO.setText(testList.get(selectedTestIndex).getTestId());
             binding.txtBestScore.setText(String.valueOf(testList.get(selectedTestIndex).getTopScore()));
             binding.txtTotaltime.setText(testList.get(selectedTestIndex).getTime() + " m");
         } else {

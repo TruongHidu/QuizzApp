@@ -9,15 +9,12 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
-import com.example.examapp.AccountFragment;
-import com.example.examapp.CategoryFragment;
-import com.example.examapp.LeaderBoardFragment;
 import com.example.examapp.R;
 import com.example.examapp.databinding.ActivityMainBinding;
-import com.example.examapp.model.ProfileModel;
+import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.MainViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private MainViewModel viewModel;
     private ActionBarDrawerToggle toggle;
     private TextView drawerUserNameText, drawerUserEmailText, imgName;
+    // private ProgressDialogUtil progressDialogUtil; // No longer needed here if fragments manage their own loading indicators
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,23 +30,20 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Initialize ViewModel
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
-        // Setup DrawerLayout and NavigationView
         binding.navView.bringToFront();
         imgName = binding.navView.getHeaderView(0).findViewById(R.id.imgName);
         drawerUserNameText = binding.navView.getHeaderView(0).findViewById(R.id.txtNameDrawer);
         drawerUserEmailText = binding.navView.getHeaderView(0).findViewById(R.id.txtEmailDrawer);
 
-        // Setup Toolbar
         setSupportActionBar(binding.toolbar);
         toggle = new ActionBarDrawerToggle(this, binding.drawerLayout, binding.toolbar, R.string.open, R.string.close);
         binding.drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(R.color.white));
 
-        // Observe profile data
+        // Observe profile data (unchanged)
         viewModel.getProfileData().observe(this, profile -> {
             if (profile != null) {
                 drawerUserNameText.setText(profile.getName().toUpperCase());
@@ -57,32 +52,36 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Observe errors
+        // Observe errors (unchanged)
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
-                // Redirect to LoginActivity on failure
                 startActivity(new Intent(MainActivity.this, LoginActivity.class));
                 finish();
             }
         });
 
         // Observe data loading status
+        // Instead of navigateToFragment here, we just know data is loaded.
+        // The fragment will observe the categories directly from the MainViewModel.
         viewModel.getDataLoaded().observe(this, loaded -> {
             if (loaded != null && loaded) {
+                // Initial data (profile and categories) is loaded.
+                // We can now safely set the initial fragment.
+                // Call navigateToFragment only once after initial data is loaded
                 navigateToFragment();
             }
         });
 
         // Check login status and load data
         if (viewModel.isUserLoggedIn()) {
-            viewModel.loadData();
+            viewModel.loadAllInitialData(); // Call the new method to load all initial data
         } else {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
         }
 
-        // Bottom Navigation
+        // Bottom Navigation (unchanged)
         binding.bottomNavBar.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
@@ -101,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-        // Navigation Drawer Item Clicks
+        // Navigation Drawer Item Clicks (unchanged, but ensure fragments are created to observe)
         binding.navView.setNavigationItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -132,23 +131,30 @@ public class MainActivity extends AppCompatActivity {
 
     private void navigateToFragment() {
         String fragmentToLoad = getIntent().getStringExtra("FRAGMENT_TO_LOAD");
-        Fragment selectedFragment = null;
+        Fragment selectedFragment;
+        int navItemId;
 
         if (fragmentToLoad != null) {
-            if (fragmentToLoad.equals("LEADERBOARD")) {
-                selectedFragment = new LeaderBoardFragment();
-                binding.bottomNavBar.setSelectedItemId(R.id.nav_leaderboard);
-            } else if (fragmentToLoad.equals("ACCOUNT")) {
-                selectedFragment = new AccountFragment();
-                binding.bottomNavBar.setSelectedItemId(R.id.nav_account);
+            switch (fragmentToLoad) {
+                case "LEADERBOARD":
+                    selectedFragment = new LeaderBoardFragment();
+                    navItemId = R.id.nav_leaderboard;
+                    break;
+                case "ACCOUNT":
+                    selectedFragment = new AccountFragment();
+                    navItemId = R.id.nav_account;
+                    break;
+                default:
+                    selectedFragment = new CategoryFragment();
+                    navItemId = R.id.nav_home;
+                    break;
             }
-        }
-
-        if (selectedFragment == null) {
+        } else {
             selectedFragment = new CategoryFragment();
-            binding.bottomNavBar.setSelectedItemId(R.id.nav_home);
+            navItemId = R.id.nav_home;
         }
 
+        binding.bottomNavBar.setSelectedItemId(navItemId);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, selectedFragment)
                 .commit();

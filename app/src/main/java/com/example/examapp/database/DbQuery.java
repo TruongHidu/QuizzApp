@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DbQuery {
@@ -34,7 +35,7 @@ public class DbQuery {
     public static int g_selectedCatIndex = 0;
     public static List<RankModel> g_userList = new ArrayList<>();
     public static int g_userCount = 0;
-    public static RankModel myPerformanece = new RankModel(0, 0, "");
+    public static RankModel myPerformance = new RankModel(0, 0, "");
     public static final int NOT_VISITED = 0;
     public static final int UNANSWERED = 1;
     public static final int ANSWERED = 2;
@@ -60,7 +61,7 @@ public class DbQuery {
                 FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
         if (userId == null) {
             myProfile = new ProfileModel("NA", null, null, 0);
-            myPerformanece = new RankModel(0, 0, "");
+            myPerformance = new RankModel(0, 0, "");
             listener.onFailture();
             return;
         }
@@ -78,12 +79,12 @@ public class DbQuery {
                     }
                     int score = documentSnapshot.getLong("TOTAL_SCORE") != null ?
                             documentSnapshot.getLong("TOTAL_SCORE").intValue() : 0;
-                    myPerformanece = new RankModel(score, 0, myProfile.getName());
+                    myPerformance = new RankModel(score, 0, myProfile.getName());
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> {
                     myProfile = new ProfileModel("NA", null, null, 0);
-                    myPerformanece = new RankModel(0, 0, "");
+                    myPerformance = new RankModel(0, 0, "");
                     listener.onFailture();
                 });
     }
@@ -103,7 +104,7 @@ public class DbQuery {
                 .update(profileData)
                 .addOnSuccessListener(unused -> {
                     myProfile.setName(name);
-                    myPerformanece.setName(name);
+                    myPerformance.setName(name);
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailture());
@@ -133,7 +134,7 @@ public class DbQuery {
         batch.commit()
                 .addOnSuccessListener(unused -> {
                     myProfile = new ProfileModel(name, email, null, 0);
-                    myPerformanece = new RankModel(0, 0, name);
+                    myPerformance = new RankModel(0, 0, name);
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailture());
@@ -219,7 +220,7 @@ public class DbQuery {
                 FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
         if (userId == null) {
             g_userList.clear();
-            myPerformanece = new RankModel(0, 0, "");
+            myPerformance = new RankModel(0, 0, "");
             isMeOnTopList = false;
             listener.onFailture();
             return;
@@ -243,7 +244,7 @@ public class DbQuery {
                         ));
                         if (userId.equals(doc.getId())) {
                             isMeOnTopList = true;
-                            myPerformanece.setRank(rank);
+                            myPerformance.setRank(rank);
                         }
                         rank++;
                     }
@@ -256,11 +257,11 @@ public class DbQuery {
                                             documentSnapshot.getLong("TOTAL_SCORE").intValue() : 0;
                                     String name = documentSnapshot.getString("NAME") != null ?
                                             documentSnapshot.getString("NAME") : "";
-                                    myPerformanece = new RankModel(score, 0, name);
+                                    myPerformance = new RankModel(score, 0, name);
                                     listener.onSuccess();
                                 })
                                 .addOnFailureListener(e -> {
-                                    myPerformanece = new RankModel(0, 0, myProfile.getName());
+                                    myPerformance = new RankModel(0, 0, myProfile.getName());
                                     listener.onSuccess();
                                 });
                     } else {
@@ -269,7 +270,7 @@ public class DbQuery {
                 })
                 .addOnFailureListener(e -> {
                     g_userList.clear();
-                    myPerformanece = new RankModel(0, 0, myProfile.getName());
+                    myPerformance = new RankModel(0, 0, myProfile.getName());
                     listener.onSuccess();
                 });
     }
@@ -295,16 +296,98 @@ public class DbQuery {
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         docList.put(doc.getId(), doc);
                     }
+
                     QueryDocumentSnapshot catListDoc = docList.get("Categories");
-                    long catCount = catListDoc.getLong("COUNT");
+                    if (catListDoc == null || !catListDoc.exists()) {
+                        listener.onFailture();
+                        return;
+                    }
+
+                    long catCount = catListDoc.getLong("COUNT") != null ? catListDoc.getLong("COUNT") : 0;
+                    AtomicInteger processedCategories = new AtomicInteger(0);
+
+                    if (catCount == 0) {
+                        listener.onSuccess();
+                        return;
+                    }
+
                     for (int i = 1; i <= catCount; i++) {
                         String catID = catListDoc.getString("CAT" + i + "_ID");
                         QueryDocumentSnapshot catDoc = docList.get(catID);
-                        int noOfTest = catDoc.getLong("NO_OF_TEST").intValue();
-                        String catName = catDoc.getString("NAME");
-                        g_categoryList.add(new CategoryModel(catID, catName, noOfTest));
+
+                        if (catDoc != null && catDoc.contains("NO_OF_TEST")) {
+                            int noOfTest = catDoc.getLong("NO_OF_TEST").intValue();
+                            if (noOfTest > 0) {
+                                // Check if the category has at least one test with questions
+                                g_firestore.collection("QUIZ")
+                                        .document(catID)
+                                        .collection("TEST_LIST")
+                                        .document("TEST_INFO")
+                                        .get()
+                                        .addOnSuccessListener(testDocSnapshot -> {
+                                            List<Map<String, Object>> testsArray = (List<Map<String, Object>>) testDocSnapshot.get("TESTs");
+                                            if (testsArray == null || testsArray.isEmpty()) {
+                                                if (processedCategories.incrementAndGet() == catCount) {
+                                                    listener.onSuccess();
+                                                }
+                                                return;
+                                            }
+
+                                            AtomicInteger validTestCount = new AtomicInteger(0);
+                                            AtomicInteger checkedTests = new AtomicInteger(0);
+                                            AtomicBoolean hasValidTest = new AtomicBoolean(false);
+
+                                            for (Map<String, Object> test : testsArray) {
+                                                String testId = (String) test.get("id");
+                                                g_firestore.collection("Question")
+                                                        .whereEqualTo("CATEGORY", catID)
+                                                        .whereEqualTo("TEST", testId)
+                                                        .limit(1)
+                                                        .get()
+                                                        .addOnSuccessListener(queryDocumentSnapshots1 -> {
+                                                            if (!queryDocumentSnapshots1.isEmpty()) {
+                                                                validTestCount.incrementAndGet();
+                                                                hasValidTest.set(true);
+                                                            }
+                                                            if (checkedTests.incrementAndGet() == testsArray.size()) {
+                                                                if (hasValidTest.get()) {
+                                                                    String catName = catDoc.getString("NAME");
+                                                                    g_categoryList.add(new CategoryModel(catID, catName, validTestCount.get()));
+                                                                }
+                                                                if (processedCategories.incrementAndGet() == catCount) {
+                                                                    listener.onSuccess();
+                                                                }
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            if (checkedTests.incrementAndGet() == testsArray.size()) {
+                                                                if (hasValidTest.get()) {
+                                                                    String catName = catDoc.getString("NAME");
+                                                                    g_categoryList.add(new CategoryModel(catID, catName, validTestCount.get()));
+                                                                }
+                                                                if (processedCategories.incrementAndGet() == catCount) {
+                                                                    listener.onSuccess();
+                                                                }
+                                                            }
+                                                        });
+                                            }
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            if (processedCategories.incrementAndGet() == catCount) {
+                                                listener.onSuccess();
+                                            }
+                                        });
+                            } else {
+                                if (processedCategories.incrementAndGet() == catCount) {
+                                    listener.onSuccess();
+                                }
+                            }
+                        } else {
+                            if (processedCategories.incrementAndGet() == catCount) {
+                                listener.onSuccess();
+                            }
+                        }
                     }
-                    listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailture());
     }
@@ -348,7 +431,6 @@ public class DbQuery {
                                     if (!queryDocumentSnapshots.isEmpty()) {
                                         g_testList.add(new TestModel(testId, 0, testTime));
                                     }
-
                                     if (loadedCount.incrementAndGet() == totalToCheck.get()) {
                                         if (g_testList.isEmpty()) {
                                             listener.onFailture();
@@ -554,7 +636,7 @@ public class DbQuery {
             batch.set(scoreDoc, testData, SetOptions.merge());
 
             batch.commit().addOnSuccessListener(unused -> {
-                myPerformanece.setScore(totalScore.get());
+                myPerformance.setScore(totalScore.get());
                 listener.onSuccess();
             }).addOnFailureListener(e -> listener.onFailture());
         }).addOnFailureListener(e -> listener.onFailture());

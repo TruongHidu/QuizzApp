@@ -73,7 +73,6 @@ public class LoginActivity extends AppCompatActivity {
                         } else {
                             startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         }
-                        finish();
                     }
 
                     @Override

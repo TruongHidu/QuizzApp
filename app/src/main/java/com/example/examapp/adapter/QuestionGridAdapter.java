@@ -86,7 +86,7 @@ public class QuestionGridAdapter extends BaseAdapter {
                     colorRes = R.color.green;
                     break;
                 case QuestionStatus.HIGHTLIGHTED:
-                    colorRes = R.color.colorPrimary; // Đồng bộ với question_list_layout.xml
+                    colorRes = R.color.orangeLight;
                     break;
                 default:
                     colorRes = R.color.gray;

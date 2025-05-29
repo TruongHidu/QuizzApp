@@ -1,4 +1,4 @@
-package com.example.examapp;
+package com.example.examapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,9 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.examapp.activities.BookMarkActivity;
-import com.example.examapp.activities.LoginActivity;
-import com.example.examapp.activities.MyProfileActivity;
+import com.example.examapp.R;
 import com.example.examapp.databinding.FragmentAccountBinding;
 import com.example.examapp.utils.ProgressDialogUtil;
 import com.example.examapp.viewmodel.AccountViewModel;

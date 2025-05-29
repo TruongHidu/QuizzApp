@@ -1,4 +1,4 @@
-package com.example.examapp;
+package com.example.examapp.activities;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -13,9 +13,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.examapp.R;
 import com.example.examapp.adapter.RankAdapter;
 import com.example.examapp.databinding.FragmentLeaderBoardBinding;
-import com.example.examapp.model.RankModel;
 import com.example.examapp.viewmodel.LeaderBoardViewModel;
 
 import java.util.ArrayList;

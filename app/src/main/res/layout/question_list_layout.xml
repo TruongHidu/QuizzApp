@@ -148,7 +148,7 @@
                             android:layout_height="24dp"
                             android:contentDescription="Highlighted"
                             app:srcCompat="@drawable/ic_circle"
-                            app:tint="@color/colorPrimary" />
+                            app:tint="@color/orangeLight" />
 
                         <TextView
                             android:id="@+id/ddddaa"

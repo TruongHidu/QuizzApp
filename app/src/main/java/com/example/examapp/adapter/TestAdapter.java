@@ -68,7 +68,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
         public void setData(int position, TestModel testModel) {
             if (getAdapterPosition() == RecyclerView.NO_POSITION) return;
 
-            testNo.setText("Test " + testModel.getTestId());
+            testNo.setText(testModel.getTestId());
             txtScore.setText(testModel.getTopScore() + "%");
             testProgressBar.setProgress(testModel.getTopScore());
 
