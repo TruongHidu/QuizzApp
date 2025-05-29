@@ -8,6 +8,9 @@ import com.example.examapp.handlerlistener.MyCompleteListener;
 import com.example.examapp.model.QuestionModel;
 import com.example.examapp.repository.AuthRepository;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class BookMarkViewModel extends ViewModel {
@@ -26,7 +29,6 @@ public class BookMarkViewModel extends ViewModel {
         return authRepository.getErrorMessage();
     }
 
-
     public void loadBookMarks(MyCompleteListener listener) {
         authRepository.loadBmIds(new MyCompleteListener() {
             @Override
@@ -34,7 +36,21 @@ public class BookMarkViewModel extends ViewModel {
                 authRepository.loadBookMarks(new MyCompleteListener() {
                     @Override
                     public void onSuccess() {
-                        bookmarkList.postValue(authRepository.getBookmarkList());
+                        // Get the bookmark list from AuthRepository
+                        List<QuestionModel> bookmarks = authRepository.getBookmarkList();
+                        // Create a new sorted list
+                        List<QuestionModel> sortedBookmarks = new ArrayList<>(bookmarks);
+                        // Sort by testId
+                        Collections.sort(sortedBookmarks, new Comparator<QuestionModel>() {
+                            @Override
+                            public int compare(QuestionModel q1, QuestionModel q2) {
+                                String testId1 = q1.getTestId() != null ? q1.getTestId() : "";
+                                String testId2 = q2.getTestId() != null ? q2.getTestId() : "";
+                                return testId1.compareTo(testId2);
+                            }
+                        });
+                        // Post the sorted list
+                        bookmarkList.postValue(sortedBookmarks);
                         listener.onSuccess();
                     }
 
@@ -57,12 +73,34 @@ public class BookMarkViewModel extends ViewModel {
         if (currentBookmarks != null && bookmarkIndex >= 0 && bookmarkIndex < currentBookmarks.size()) {
             String questionId = currentBookmarks.get(bookmarkIndex).getQuestionId();
             authRepository.unbookmarkByQuestionId(questionId);
-            bookmarkList.postValue(authRepository.getBookmarkList());
+            // Update with sorted list
+            List<QuestionModel> bookmarks = authRepository.getBookmarkList();
+            List<QuestionModel> sortedBookmarks = new ArrayList<>(bookmarks);
+            Collections.sort(sortedBookmarks, new Comparator<QuestionModel>() {
+                @Override
+                public int compare(QuestionModel q1, QuestionModel q2) {
+                    String testId1 = q1.getTestId() != null ? q1.getTestId() : "";
+                    String testId2 = q2.getTestId() != null ? q2.getTestId() : "";
+                    return testId1.compareTo(testId2);
+                }
+            });
+            bookmarkList.postValue(sortedBookmarks);
         }
     }
 
     public void rebookmarkQuestion(QuestionModel question) {
         authRepository.rebookmarkByQuestionId(question);
-        bookmarkList.postValue(authRepository.getBookmarkList());
+        // Update with sorted list
+        List<QuestionModel> bookmarks = authRepository.getBookmarkList();
+        List<QuestionModel> sortedBookmarks = new ArrayList<>(bookmarks);
+        Collections.sort(sortedBookmarks, new Comparator<QuestionModel>() {
+            @Override
+            public int compare(QuestionModel q1, QuestionModel q2) {
+                String testId1 = q1.getTestId() != null ? q1.getTestId() : "";
+                String testId2 = q2.getTestId() != null ? q2.getTestId() : "";
+                return testId1.compareTo(testId2);
+            }
+        });
+        bookmarkList.postValue(sortedBookmarks);
     }
 }

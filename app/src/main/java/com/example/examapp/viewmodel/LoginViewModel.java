@@ -25,6 +25,10 @@ public class LoginViewModel extends ViewModel {
         authRepository.login(email, password, listener);
     }
 
+    public void resetPassword(String email, MyCompleteListener listener) {
+        authRepository.resetPassword(email, listener);
+    }
+
     public boolean validateData(String email, String password) {
         if (email.isEmpty()) {
             return false;

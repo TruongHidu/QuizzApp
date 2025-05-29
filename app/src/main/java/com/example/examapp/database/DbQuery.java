@@ -374,9 +374,6 @@ public class DbQuery {
     }
 
     public static void loadData(MyCompleteListener listener) {
-        loadCategories(new MyCompleteListener() {
-            @Override
-            public void onSuccess() {
                 getUserData(new MyCompleteListener() {
                     @Override
                     public void onSuccess() {
@@ -396,12 +393,7 @@ public class DbQuery {
                         listener.onFailture();
                     }
                 });
-            }
-            @Override
-            public void onFailture() {
-                listener.onFailture();
-            }
-        });
+
     }
 
     public static void loadQuestions(MyCompleteListener listener) {

@@ -38,6 +38,12 @@ public class AuthRepository {
     private MutableLiveData<List<CategoryModel>> categories = new MutableLiveData<>();
     private MutableLiveData<List<TestModel>> tests = new MutableLiveData<>();
 
+    // Variables for tracking failed login attempts
+    private int failedLoginAttempts = 0;
+    private long blockTimestamp = 0;
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final long BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
     public AuthRepository() {
         mAuth = FirebaseAuth.getInstance();
         firestore = FirebaseFirestore.getInstance();
@@ -98,25 +104,49 @@ public class AuthRepository {
     }
 
     public void login(String email, String password, MyCompleteListener listener) {
+        // Check if user is blocked
+        long currentTime = System.currentTimeMillis();
+        if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS && (currentTime - blockTimestamp) < BLOCK_DURATION_MS) {
+            long remainingTime = (BLOCK_DURATION_MS - (currentTime - blockTimestamp)) / 1000;
+            errorMessage.postValue("Too many failed attempts. Please try again after " + remainingTime + " seconds.");
+            listener.onFailture();
+            return;
+        }
+
+        // Reset attempts if block duration has expired
+        if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS && (currentTime - blockTimestamp) >= BLOCK_DURATION_MS) {
+            failedLoginAttempts = 0;
+            blockTimestamp = 0;
+        }
+
         if (email.equals("admin@gmail.com") && password.equals("admin")) {
+            failedLoginAttempts = 0; // Reset attempts on successful admin login
             listener.onSuccess();
             return;
         }
+
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        failedLoginAttempts = 0; // Reset attempts on successful login
                         loginStatus.postValue(true);
                         listener.onSuccess();
                     } else {
-                        loginStatus.postValue(false);
-                        Exception e = task.getException();
-                        if (e instanceof FirebaseAuthInvalidUserException) {
-                            errorMessage.postValue("Email not exists!");
-                        } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                            errorMessage.postValue("Invalid password. Please try again!");
+                        failedLoginAttempts++;
+                        if (failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+                            blockTimestamp = System.currentTimeMillis();
+                            errorMessage.postValue("Too many failed attempts. Please try again after 5 minutes.");
                         } else {
-                            errorMessage.postValue("Error: " + e.getMessage());
+                            Exception e = task.getException();
+                            if (e instanceof FirebaseAuthInvalidUserException) {
+                                errorMessage.postValue("Email not exists!");
+                            } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                                errorMessage.postValue("Invalid password. Please try again! (" + (MAX_LOGIN_ATTEMPTS - failedLoginAttempts) + " attempts left)");
+                            } else {
+                                errorMessage.postValue("Error: " + e.getMessage());
+                            }
                         }
+                        loginStatus.postValue(false);
                         listener.onFailture();
                     }
                 });
@@ -164,6 +194,34 @@ public class AuthRepository {
                 .addOnFailureListener(e -> {
                     errorMessage.postValue("Failed to check username: " + e.getMessage());
                     listener.onFailture();
+                });
+    }
+
+    public void resetPassword(String email, MyCompleteListener listener) {
+        if (email == null || email.trim().isEmpty()) {
+            errorMessage.postValue("Email cannot be empty.");
+            listener.onFailture();
+            return;
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorMessage.postValue("Invalid email format.");
+            listener.onFailture();
+            return;
+        }
+        mAuth.sendPasswordResetEmail(email)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        errorMessage.postValue("Password reset email sent. Check your inbox.");
+                        listener.onSuccess();
+                    } else {
+                        Exception e = task.getException();
+                        if (e instanceof FirebaseAuthInvalidUserException) {
+                            errorMessage.postValue("Email not registered.");
+                        } else {
+                            errorMessage.postValue("Failed to send reset email: " + e.getMessage());
+                        }
+                        listener.onFailture();
+                    }
                 });
     }
 
@@ -610,6 +668,9 @@ public class AuthRepository {
         DbQuery.g_bookmarkList.clear();
         DbQuery.g_selectedCatIndex = 0;
         DbQuery.g_selected_test_index = 0;
+        // Reset login attempt counter
+        failedLoginAttempts = 0;
+        blockTimestamp = 0;
     }
 
     public boolean isUserLoggedIn() {

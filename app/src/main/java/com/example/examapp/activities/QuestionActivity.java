@@ -208,7 +208,7 @@ public class QuestionActivity extends AppCompatActivity {
         });
 
         btnBookMark.setOnClickListener(view -> {
-            Log.d(TAG, "Bookmark clicked for questionId: " + questionId);
+//            Log.d(TAG, "Bookmark clicked for questionId: " + questionId);
             boolean isBookmarked = !viewModel.getCurrentQuestionList().get(questionId).isBookMarked();
             viewModel.updateBookmark(questionId, isBookmarked);
             updateBookmarkUI();
