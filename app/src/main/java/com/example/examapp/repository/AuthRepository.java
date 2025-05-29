@@ -29,8 +29,6 @@ public class AuthRepository {
     private FirebaseAuth mAuth;
     private FirebaseFirestore firestore;
 
-    private static AuthRepository instance;
-
     private MutableLiveData<Boolean> loginStatus = new MutableLiveData<>();
     private MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private MutableLiveData<ProfileModel> userProfile = new MutableLiveData<>();
@@ -40,17 +38,9 @@ public class AuthRepository {
     private MutableLiveData<List<CategoryModel>> categories = new MutableLiveData<>();
     private MutableLiveData<List<TestModel>> tests = new MutableLiveData<>();
 
-
     public AuthRepository() {
         mAuth = FirebaseAuth.getInstance();
         firestore = FirebaseFirestore.getInstance();
-    }
-
-    public static synchronized AuthRepository getInstance() {
-        if (instance == null) {
-            instance = new AuthRepository();
-        }
-        return instance;
     }
 
     public LiveData<Boolean> getLoginStatus() {
@@ -177,31 +167,6 @@ public class AuthRepository {
                 });
     }
 
-    public void loadUserDataAndCategories(MyCompleteListener completeListener) {
-
-        DbQuery.loadData(new MyCompleteListener() {
-            @Override
-            public void onSuccess() {
-                DbQuery.loadCategories(new MyCompleteListener() {
-                    @Override
-                    public void onSuccess() {
-                        completeListener.onSuccess(); // Both loaded successfully
-                    }
-
-                    @Override
-                    public void onFailture() {
-                        completeListener.onFailture(); // Category load failed
-                    }
-                });
-            }
-
-            @Override
-            public void onFailture() {
-                completeListener.onFailture(); // User data load failed
-            }
-        });
-    }
-
     public void loadData(MyCompleteListener listener) {
         DbQuery.loadData(new MyCompleteListener() {
             @Override
@@ -216,12 +181,6 @@ public class AuthRepository {
             }
         });
     }
-
-
-
-
-
-
 
     public void saveUserData(String name, MyCompleteListener listener) {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
@@ -275,7 +234,7 @@ public class AuthRepository {
             @Override
             public void onSuccess() {
                 topUsers.postValue(DbQuery.g_userList);
-                userPerformance.postValue(DbQuery.myPerformance != null ? DbQuery.myPerformance : new RankModel(0, 0, ""));
+                userPerformance.postValue(DbQuery.myPerformanece != null ? DbQuery.myPerformanece : new RankModel(0, 0, ""));
             }
             @Override
             public void onFailture() {
@@ -285,36 +244,36 @@ public class AuthRepository {
         });
     }
 
-//    public void checkName(String name, String currentUserId, MyCompleteListener listener) {
-//        if (name == null || name.trim().isEmpty()) {
-//            errorMessage.postValue("Username cannot be empty.");
-//            listener.onFailture();
-//            return;
-//        }
-//
-//        firestore.collection("USERS")
-//                .whereEqualTo("NAME", name.trim())
-//                .get()
-//                .addOnSuccessListener(queryDocumentSnapshots -> {
-//                    boolean nameExists = false;
-//                    for (var doc : queryDocumentSnapshots) {
-//                        if (!doc.getId().equals(currentUserId)) {
-//                            nameExists = true;
-//                            break;
-//                        }
-//                    }
-//                    if (nameExists) {
-//                        errorMessage.postValue("Username already exists.");
-//                        listener.onFailture();
-//                    } else {
-//                        listener.onSuccess();
-//                    }
-//                })
-//                .addOnFailureListener(e -> {
-//                    errorMessage.postValue("Failed to check username: " + e.getMessage());
-//                    listener.onFailture();
-//                });
-//    }
+    public void checkName(String name, String currentUserId, MyCompleteListener listener) {
+        if (name == null || name.trim().isEmpty()) {
+            errorMessage.postValue("Username cannot be empty.");
+            listener.onFailture();
+            return;
+        }
+
+        firestore.collection("USERS")
+                .whereEqualTo("NAME", name.trim())
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    boolean nameExists = false;
+                    for (var doc : queryDocumentSnapshots) {
+                        if (!doc.getId().equals(currentUserId)) {
+                            nameExists = true;
+                            break;
+                        }
+                    }
+                    if (nameExists) {
+                        errorMessage.postValue("Username already exists.");
+                        listener.onFailture();
+                    } else {
+                        listener.onSuccess();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    errorMessage.postValue("Failed to check username: " + e.getMessage());
+                    listener.onFailture();
+                });
+    }
 
     public void loadUserCount() {
         DbQuery.getUsersCount(new MyCompleteListener() {
@@ -345,7 +304,6 @@ public class AuthRepository {
     }
 
     public void loadTestData() {
-        tests.postValue(null);
         DbQuery.loadTestData(new MyCompleteListener() {
             @Override
             public void onSuccess() {
@@ -366,7 +324,6 @@ public class AuthRepository {
             }
         });
     }
-
 
     public void loadQuestions(MyCompleteListener listener) {
         DbQuery.loadQuestions(new MyCompleteListener() {
@@ -457,7 +414,6 @@ public class AuthRepository {
     public List<QuestionModel> getCurrentQuestionList() {
         return DbQuery.g_questionList;
     }
-
 
     public void updateBookmark(int questionIndex, boolean isBookmarked) {
         if (questionIndex >= 0 && questionIndex < DbQuery.g_questionList.size()) {
@@ -644,7 +600,7 @@ public class AuthRepository {
         categories.setValue(null);
         tests.setValue(null);
         DbQuery.myProfile = new ProfileModel("NA", null, null, 0);
-        DbQuery.myPerformance = new RankModel(0, 0, "");
+        DbQuery.myPerformanece = new RankModel(0, 0, "");
         DbQuery.g_userList = new ArrayList<>();
         DbQuery.g_userCount = 0;
         DbQuery.g_categoryList = new ArrayList<>();

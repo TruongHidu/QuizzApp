@@ -28,12 +28,12 @@ public class CategoryViewModel extends ViewModel {
         authRepository.loadCategories(new MyCompleteListener() {
             @Override
             public void onSuccess() {
-                // Categories loaded, handled by AuthRepository
+                // No-op: LiveData will notify observers
             }
 
             @Override
             public void onFailture() {
-                // Error handled by AuthRepository
+                // No-op: Error message LiveData will notify observers
             }
         });
     }
