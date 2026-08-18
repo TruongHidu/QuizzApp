@@ -6,20 +6,18 @@ import android.view.MenuItem;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
 import com.example.examapp.adapter.AnswerAdapter;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityAnswerBinding;
+import com.example.examapp.viewmodel.TestViewModel;
 
 public class AnswerActivity extends AppCompatActivity {
     private ActivityAnswerBinding binding;
     private AnswerAdapter adapter;
+    private TestViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,28 +26,23 @@ public class AnswerActivity extends AppCompatActivity {
         binding = ActivityAnswerBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Setup Toolbar
         setSupportActionBar(binding.toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
         getSupportActionBar().setTitle("Answer");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setOrientation(RecyclerView.VERTICAL);
-        binding.rcvAnswer.setLayoutManager(layoutManager);
-
-        adapter = new AnswerAdapter(DbQuery.g_questionList);
+        // Setup RecyclerView
+        binding.rcvAnswer.setLayoutManager(new LinearLayoutManager(this));
+        viewModel = new ViewModelProvider(this).get(TestViewModel.class);
+        adapter = new AnswerAdapter(viewModel.getCurrentQuestionList(), viewModel);
         binding.rcvAnswer.setAdapter(adapter);
-
-
-
-
-
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item){
-        if(item.getItemId() == android.R.id.home){
-            AnswerActivity.this.finish();
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }

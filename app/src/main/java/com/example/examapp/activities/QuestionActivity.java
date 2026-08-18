@@ -1,24 +1,23 @@
 package com.example.examapp.activities;
 
-import static com.example.examapp.database.DbQuery.HIGHTLIGHTED;
-import static com.example.examapp.database.DbQuery.NOT_VISITED;
-import static com.example.examapp.database.DbQuery.g_questionList;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,55 +26,67 @@ import androidx.recyclerview.widget.SnapHelper;
 import com.example.examapp.R;
 import com.example.examapp.adapter.QuestionAdapter;
 import com.example.examapp.adapter.QuestionGridAdapter;
-import com.example.examapp.database.DbQuery;
+import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.utils.QuestionStatus;
+import com.example.examapp.viewmodel.TestViewModel;
 
-import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 public class QuestionActivity extends AppCompatActivity {
+    private static final String TAG = "QuestionActivity";
+    private TestViewModel viewModel;
     private QuestionAdapter adapter;
+    private QuestionGridAdapter questionGridAdapter;
+    private ProgressDialogUtil progressDialogUtil;
     private int questionId;
     private DrawerLayout drawerLayout;
-    private ConstraintLayout constraintList;
     private RecyclerView rcvQuestion;
     private TextView txtQuestId, txtCatName, txtTime;
     private Button btnClear, btnMark, btnSubmit;
     private ImageButton btnPre, btnNext, btnCloseList;
     private ImageView btnListQuestion, btnMarkImage, btnBookMark;
-    private QuestionGridAdapter questionGridAdapter;
     private CountDownTimer timer;
     private long timeLeft;
-
-
     private GridView gvQuestionList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.question_list_layout);
 
-        init();
+        progressDialogUtil = new ProgressDialogUtil(this);
+        progressDialogUtil.show("Loading questions...");
 
-        questionGridAdapter = new QuestionGridAdapter(this,DbQuery.g_questionList.size());
-        gvQuestionList.setAdapter(questionGridAdapter);
+        viewModel = new ViewModelProvider(this).get(TestViewModel.class);
 
-        questionGridAdapter.notifyDataSetChanged();
-        adapter = new QuestionAdapter(DbQuery.g_questionList);
-        rcvQuestion.setAdapter(adapter);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        rcvQuestion.setLayoutManager(layoutManager);
-        rcvQuestion.setItemViewCacheSize(DbQuery.g_questionList.size());
+        viewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                progressDialogUtil.dismiss();
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
 
+        viewModel.loadQuestions(new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                progressDialogUtil.dismiss();
+                init();
+                setupUI();
+                startTimer();
+            }
 
-
-        setSnapHelper();
-        setClickListeners();
-        startTimer();
+            @Override
+            public void onFailture() {
+                progressDialogUtil.dismiss();
+                Toast.makeText(QuestionActivity.this, "Failed to load questions", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
     }
 
-    private void init(){
+    private void init() {
         drawerLayout = findViewById(R.id.drawer_layout12);
-        constraintList = findViewById(R.id.contrainList);
-        btnCloseList = findViewById(R.id.btnCloseList);
         rcvQuestion = findViewById(R.id.rcvQuestion);
         txtQuestId = findViewById(R.id.txtQuestId);
         txtCatName = findViewById(R.id.txtCatName);
@@ -89,25 +100,50 @@ public class QuestionActivity extends AppCompatActivity {
         btnMark = findViewById(R.id.btnMark);
         btnSubmit = findViewById(R.id.btnSubmit);
         btnBookMark = findViewById(R.id.btnBookMark);
+        btnCloseList = findViewById(R.id.btnCloseList);
 
         questionId = 0;
-        txtQuestId.setText((questionId + 1) + "/" + DbQuery.g_questionList.size());
-        txtCatName.setText(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
+    }
 
-        DbQuery.g_questionList.get(questionId).setStatus(DbQuery.UNANSWERED);
+    private void setupUI() {
+        txtCatName.setText(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
+        txtQuestId.setText((questionId + 1) + "/" + viewModel.getCurrentQuestionList().size());
 
-        if(g_questionList.get(0).isBookMarked()){
-            btnBookMark.setImageResource(R.drawable.ic_bookmark);
-        }else{
-            btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
-        }
+        viewModel.getCurrentQuestionList().get(questionId).setStatus(QuestionStatus.UNANSWERED);
+        updateBookmarkUI();
 
+        questionGridAdapter = new QuestionGridAdapter(this, viewModel.getCurrentQuestionList(), position -> goToQuestion(position));
+        gvQuestionList.setAdapter(questionGridAdapter);
 
+        adapter = new QuestionAdapter(viewModel.getCurrentQuestionList(), new QuestionAdapter.OnOptionSelectedListener() {
+            @Override
+            public void onOptionSelected(int position, int selectedOption) {
+                viewModel.getCurrentQuestionList().get(position).setSelectedOption(selectedOption);
+                viewModel.getCurrentQuestionList().get(position).setStatus(QuestionStatus.ANSWERED);
+                adapter.notifyItemChanged(position);
+                questionGridAdapter.notifyDataSetChanged();
+            }
 
+            @Override
+            public void onOptionCleared(int position) {
+                viewModel.getCurrentQuestionList().get(position).setSelectedOption(-1);
+                viewModel.getCurrentQuestionList().get(position).setStatus(QuestionStatus.UNANSWERED);
+                adapter.notifyItemChanged(position);
+                questionGridAdapter.notifyDataSetChanged();
+            }
+        });
+        rcvQuestion.setAdapter(adapter);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        rcvQuestion.setLayoutManager(layoutManager);
+        rcvQuestion.setItemAnimator(null);
+        rcvQuestion.setItemViewCacheSize(viewModel.getCurrentQuestionList().size());
+
+        setSnapHelper();
+        setClickListeners();
     }
 
     private void startTimer() {
-        long totalTime = DbQuery.g_testList.get(DbQuery.g_selected_test_index).getTime() * 60 * 1000;
+        long totalTime = viewModel.getCurrentTestList().get(viewModel.getSelectedTestIndex()).getTime() * 60 * 1000;
         timer = new CountDownTimer(totalTime + 1000, 1000) {
             @Override
             public void onTick(long remainTime) {
@@ -119,23 +155,14 @@ public class QuestionActivity extends AppCompatActivity {
             }
             @Override
             public void onFinish() {
-
-                Intent intent = new Intent(QuestionActivity.this, ScoreActivity.class);
-                long totalTime = DbQuery.g_testList.get(DbQuery.g_selected_test_index).getTime() * 60 * 1000;
-                intent.putExtra("TIME_TAKEN", totalTime - timeLeft);
-                startActivity(intent);
-                QuestionActivity.this.finish();
-
+                submitTest(true);
             }
         };
         timer.start();
     }
 
     private void setClickListeners() {
-
-        btnSubmit.setOnClickListener(view -> {
-            submitTest();
-        });
+        btnSubmit.setOnClickListener(view -> submitTest(false));
 
         btnPre.setOnClickListener(view -> {
             if (questionId > 0) {
@@ -143,97 +170,107 @@ public class QuestionActivity extends AppCompatActivity {
                 rcvQuestion.smoothScrollToPosition(questionId);
             }
         });
+
         btnNext.setOnClickListener(view -> {
-            if (questionId < DbQuery.g_questionList.size() - 1) {
+            if (questionId == viewModel.getCurrentQuestionList().size() - 1) {
+                submitTest(false);
+            } else {
                 questionId++;
                 rcvQuestion.smoothScrollToPosition(questionId);
             }
         });
+
         btnClear.setOnClickListener(view -> {
-            DbQuery.g_questionList.get(questionId).setSelectedOption(-1);
-            DbQuery.g_questionList.get(questionId).setStatus(DbQuery.UNANSWERED);
+            viewModel.clearSelection(questionId);
             adapter.notifyItemChanged(questionId);
-        });
-        btnListQuestion.setOnClickListener(view -> {
-            if (!drawerLayout.isDrawerOpen(GravityCompat.END)) {
-                drawerLayout.openDrawer(GravityCompat.END);
-            }
+            questionGridAdapter.notifyDataSetChanged();
         });
 
         btnListQuestion.setOnClickListener(view -> {
-            if(!drawerLayout.isDrawerOpen(GravityCompat.END)){
+            if (!drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 questionGridAdapter.notifyDataSetChanged();
                 drawerLayout.openDrawer(GravityCompat.END);
             }
         });
+
         btnCloseList.setOnClickListener(view -> {
             if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
                 drawerLayout.closeDrawer(GravityCompat.END);
             }
         });
+
         btnMark.setOnClickListener(view -> {
-            if(btnMarkImage.getVisibility() != View.VISIBLE){
-                btnMarkImage.setVisibility(View.VISIBLE);
-                DbQuery.g_questionList.get(questionId).setStatus(DbQuery.HIGHTLIGHTED);
-            }else{
-                btnMarkImage.setVisibility(View.GONE);
-                if(DbQuery.g_questionList.get(questionId).getSelectedOption() != -1){
-                    DbQuery.g_questionList.get(questionId).setStatus(DbQuery.ANSWERED);
-                }else{
-                    DbQuery.g_questionList.get(questionId).setStatus(DbQuery.UNANSWERED);
-                }
-            }
+            boolean isMarked = btnMarkImage.getVisibility() != View.VISIBLE;
+            viewModel.markForReview(questionId, isMarked);
+            btnMarkImage.setVisibility(isMarked ? View.VISIBLE : View.GONE);
+            adapter.notifyItemChanged(questionId);
+            questionGridAdapter.notifyDataSetChanged();
         });
 
         btnBookMark.setOnClickListener(view -> {
-            addToBookMark();
+//            Log.d(TAG, "Bookmark clicked for questionId: " + questionId);
+            boolean isBookmarked = !viewModel.getCurrentQuestionList().get(questionId).isBookMarked();
+            viewModel.updateBookmark(questionId, isBookmarked);
+            updateBookmarkUI();
+            adapter.notifyItemChanged(questionId);
+            questionGridAdapter.notifyDataSetChanged();
+            // Hiển thị Toast dựa trên trạng thái bookmark
+            Toast.makeText(
+                    QuestionActivity.this,
+                    isBookmarked ? "Saved this question!" : "Unsaved this question!",
+                    Toast.LENGTH_SHORT
+            ).show();
         });
     }
 
-    private void addToBookMark() {
-        if(g_questionList.get(questionId).isBookMarked()){
-            g_questionList.get(questionId).setBookMarked(false);
-            btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
-
-        }else{
-            g_questionList.get(questionId).setBookMarked(true);
+    private void updateBookmarkUI() {
+        if (viewModel.getCurrentQuestionList().get(questionId).isBookMarked()) {
             btnBookMark.setImageResource(R.drawable.ic_bookmark);
-
+        } else {
+            btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
         }
-
     }
 
-    private void submitTest() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(QuestionActivity.this);
-        builder.setCancelable(true);
-        View view = getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
-        Button btnCancel = view.findViewById(R.id.btnCancel);
-        Button btnConfirm = view.findViewById(R.id.btnConfirm);
-        builder.setView(view);
-        final AlertDialog dialog = builder.create();
-        btnCancel.setOnClickListener(view1 -> {
-            dialog.dismiss();
-        });
-        btnConfirm.setOnClickListener(view1 -> {
-            timer.cancel();
-            dialog.dismiss();
-
-            Intent intent = new Intent(QuestionActivity.this, ScoreActivity.class);
-            long totalTime = DbQuery.g_testList.get(DbQuery.g_selected_test_index).getTime() * 60 * 1000;
-            intent.putExtra("TIME_TAKEN", totalTime - timeLeft);
-            startActivity(intent);
-            QuestionActivity.this.finish();
-
-        });
-        dialog.show();
+    private void submitTest(boolean isTimerFinished) {
+        if (!isTimerFinished) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setCancelable(true);
+            View view = getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
+            Button btnCancel = view.findViewById(R.id.btnCancel);
+            Button btnConfirm = view.findViewById(R.id.btnConfirm);
+            builder.setView(view);
+            final AlertDialog dialog = builder.create();
+            btnCancel.setOnClickListener(view1 -> dialog.dismiss());
+            btnConfirm.setOnClickListener(view1 -> {
+                timer.cancel();
+                dialog.dismiss();
+                navigateToScoreActivity();
+            });
+            dialog.show();
+        } else {
+            navigateToScoreActivity();
+        }
     }
 
-    public void goToQuestion(int position){
+    private void navigateToScoreActivity() {
+        Intent intent = new Intent(QuestionActivity.this, ScoreActivity.class);
+        long totalTime = viewModel.getCurrentTestList().get(viewModel.getSelectedTestIndex()).getTime() * 60 * 1000;
+        intent.putExtra("TIME_TAKEN", totalTime - timeLeft);
+        startActivity(intent);
+        finish();
+    }
+
+    public void goToQuestion(int position) {
+        questionId = position;
         rcvQuestion.smoothScrollToPosition(position);
-        if (drawerLayout.isDrawerOpen(GravityCompat.END)){
-            drawerLayout.closeDrawer(GravityCompat.END) ;
+        if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            drawerLayout.closeDrawer(GravityCompat.END);
         }
+        updateBookmarkUI();
+        adapter.notifyItemChanged(position);
+        questionGridAdapter.notifyDataSetChanged();
     }
+
     private void setSnapHelper() {
         SnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(rcvQuestion);
@@ -244,25 +281,24 @@ public class QuestionActivity extends AppCompatActivity {
                 super.onScrollStateChanged(recyclerView, newState);
                 View view = snapHelper.findSnapView(rcvQuestion.getLayoutManager());
                 questionId = rcvQuestion.getLayoutManager().getPosition(view);
-                if(DbQuery.g_questionList.get(questionId).getStatus() == NOT_VISITED){
-                    DbQuery.g_questionList.get(questionId).setStatus(DbQuery.UNANSWERED);
+                if (viewModel.getCurrentQuestionList().get(questionId).getStatus() == QuestionStatus.NOT_VISITED) {
+                    viewModel.getCurrentQuestionList().get(questionId).setStatus(QuestionStatus.UNANSWERED);
                 }
-                if(DbQuery.g_questionList.get(questionId).getStatus() == HIGHTLIGHTED) {
-                    if(btnMarkImage.getVisibility() != View.VISIBLE){
-                        btnMarkImage.setVisibility(View.VISIBLE);
-                    }
-                }else{
-                    btnMarkImage.setVisibility(View.GONE);
-                }
-
-                txtQuestId.setText((questionId + 1) + "/" + DbQuery.g_questionList.size());
-
-                if(g_questionList.get(questionId).isBookMarked()){
-                    btnBookMark.setImageResource(R.drawable.ic_bookmark);
-                }else{
-                    btnBookMark.setImageResource(R.drawable.ic_unbookmrked);
-                }
+                btnMarkImage.setVisibility(
+                        viewModel.getCurrentQuestionList().get(questionId).getStatus() == QuestionStatus.HIGHTLIGHTED
+                                ? View.VISIBLE : View.GONE
+                );
+                txtQuestId.setText((questionId + 1) + "/" + viewModel.getCurrentQuestionList().size());
+                updateBookmarkUI();
+                adapter.notifyItemChanged(questionId);
+                questionGridAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        progressDialogUtil.dismiss();
     }
 }

@@ -5,148 +5,212 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout12"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <include layout="@layout/activity_question"/>
+    android:layout_height="match_parent"
+    android:background="@color/main_background">
 
     <!-- Nội dung chính -->
+    <include layout="@layout/activity_question" />
+
+    <!-- Drawer chứa danh sách câu hỏi -->
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/contrainList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/contrainList"
-        android:background="@color/main_background"
-        android:layout_gravity = "end">
+        android:layout_gravity="end"
+        android:background="@color/white"
+        android:elevation="8dp">
 
-        <ImageView
-            android:id="@+id/imageView4"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="24dp"
+        <!-- Header của Drawer -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/header_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/circle"
-            app:tint="@color/green" />
+            app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Answered"
-            android:textColor="@color/green"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView4"
-            app:layout_constraintStart_toEndOf="@+id/imageView4"
-            app:layout_constraintTop_toTopOf="@+id/imageView4" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="@+id/imageView4"
-            app:layout_constraintTop_toBottomOf="@+id/imageView4"
-            app:srcCompat="@drawable/circle"
-            app:tint="@color/gray" />
+                <!-- Row 1: Answered và Unanswered -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
 
-        <TextView
-            android:id="@+id/textView3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Unseen"
-            android:textStyle="bold"
-            android:textColor="@color/gray"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView3"
-            app:layout_constraintStart_toEndOf="@+id/imageView3"
-            app:layout_constraintTop_toTopOf="@+id/imageView3" />
+                    <!-- Answered -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/imageView4111"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintEnd_toStartOf="@+id/ddg"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/circle"
-            app:tint="@android:color/holo_red_dark"
-            tools:ignore="UseAppTint" />
+                        <ImageView
+                            android:id="@+id/imageView4"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:contentDescription="Answered"
+                            app:srcCompat="@drawable/ic_circle"
+                            app:tint="@color/green" />
 
-        <TextView
-            android:id="@+id/ddg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="32dp"
-            android:text="Unanswered"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView4111"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/imageView4111"
-            android:textColor="@android:color/holo_red_dark" />
+                        <TextView
+                            android:id="@+id/textView2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Answered"
+                            android:textColor="@color/green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
-        <ImageView
-            android:id="@+id/imageView41121"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="@+id/imageView4111"
-            app:layout_constraintTop_toBottomOf="@+id/imageView4111"
-            app:srcCompat="@drawable/circle"
-            app:tint="@color/pink" />
+                    <!-- Unanswered -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/ddddaa"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:text="Highlighted"
-            android:textColor="@color/pink"
-            app:layout_constraintBottom_toBottomOf="@+id/imageView41121"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView41121"
-            app:layout_constraintTop_toTopOf="@+id/imageView41121" />
+                        <ImageView
+                            android:id="@+id/imageView4111"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:contentDescription="Unanswered"
+                            app:srcCompat="@drawable/ic_circle"
+                            app:tint="@color/red" />
 
+                        <TextView
+                            android:id="@+id/ddg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Unanswered"
+                            android:textColor="@color/red"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Row 2: Unseen và Highlighted -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <!-- Unseen -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/imageView3"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:contentDescription="Unseen"
+                            app:srcCompat="@drawable/ic_circle"
+                            app:tint="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/textView3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Unseen"
+                            android:textColor="@color/gray"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Highlighted -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/imageView41121"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:contentDescription="Highlighted"
+                            app:srcCompat="@drawable/ic_circle"
+                            app:tint="@color/orangeLight" />
+
+                        <TextView
+                            android:id="@+id/ddddaa"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Highlighted"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Divider -->
         <View
             android:id="@+id/divider"
-            android:layout_width="409dp"
+            android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="8dp"
-            android:background="?android:attr/listDivider"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/gray_light"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/imageView3" />
+            app:layout_constraintTop_toBottomOf="@id/header_card" />
 
+        <!-- GridView chứa danh sách câu hỏi -->
         <GridView
-            android:layout_width="match_parent"
             android:id="@+id/gvQuestionList"
+            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:columnWidth="56dp"
+            android:gravity="center"
+            android:horizontalSpacing="12dp"
+            android:numColumns="auto_fit"
+            android:padding="8dp"
+            android:verticalSpacing="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider"
-            android:gravity="center"
-            android:columnWidth="60dp"
-            android:numColumns="auto_fit"
-            android:horizontalSpacing="16dp"
-            android:verticalSpacing="16dp"
-            android:padding="8dp">
+            app:layout_constraintTop_toBottomOf="@id/divider" />
 
-        </GridView>
-
+        <!-- Nút đóng Drawer -->
         <ImageButton
             android:id="@+id/btnCloseList"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            app:layout_constraintStart_toStartOf="parent"
-            android:elevation="3dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close Drawer"
+            android:elevation="6dp"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_close" />
-
-
+            app:srcCompat="@drawable/ic_close"
+            app:tint="@color/gray_dark" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.drawerlayout.widget.DrawerLayout>

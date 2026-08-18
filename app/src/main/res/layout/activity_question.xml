@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="20:15 min"
-            android:textColor="@color/green"
+            android:textColor="@color/white"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -45,6 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:layout_weight="1"
+            android:textSize="16sp"
             android:background="@drawable/button_border"
             android:backgroundTint="@color/orangeLight"
             android:text="Submit"
@@ -55,7 +56,7 @@
         android:id="@+id/ln3"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimaryDark"
+        android:background="@color/colorPrimary"
         android:orientation="horizontal"
         android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -104,7 +105,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             app:srcCompat="@drawable/ic_back" />
 
         <androidx.appcompat.widget.AppCompatButton
@@ -112,28 +113,28 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
-            android:textSize="15sp"
             android:layout_weight="1"
             android:background="@drawable/button_border"
             android:text="Clear Selection"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="15sp" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnMark"
             android:layout_width="0dp"
-            android:textSize="15sp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/button_border"
             android:text="Mark for review"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="15sp" />
 
         <ImageButton
             android:id="@+id/btnNext"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             app:srcCompat="@drawable/ic_next" />
     </LinearLayout>
 
@@ -156,7 +157,7 @@
         android:src="@drawable/ic_bookmark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ln3"
-        app:tint="@android:color/holo_red_dark"
+        app:tint="@color/orangeLight"
         android:layout_marginEnd="16dp"/>
 
 

@@ -14,13 +14,20 @@ import com.example.examapp.activities.TestActivity;
 import com.example.examapp.database.DbQuery;
 import com.example.examapp.model.CategoryModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder> {
     private List<CategoryModel> categoryList;
 
     public CategoryAdapter(List<CategoryModel> categoryList) {
-        this.categoryList = categoryList;
+        this.categoryList = new ArrayList<>(categoryList);
+    }
+
+    public void updateData(List<CategoryModel> newCategoryList) {
+        this.categoryList.clear();
+        this.categoryList.addAll(newCategoryList);
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -29,7 +36,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.cat_item_layout, parent, false);
         return new CategoryViewHolder(view);
     }
-
 
     @Override
     public void onBindViewHolder(@NonNull CategoryViewHolder holder, int position) {
@@ -40,13 +46,12 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
-                DbQuery.g_selectedCatIndex = currentPosition;  // Dùng vị trí hợp lệ
+                DbQuery.g_selectedCatIndex = currentPosition;
                 Intent intent = new Intent(v.getContext(), TestActivity.class);
                 v.getContext().startActivity(intent);
             }
         });
     }
-
 
     @Override
     public int getItemCount() {
@@ -60,7 +65,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             super(itemView);
             nameTextView = itemView.findViewById(R.id.txtCatName);
             noOfTestsTextView = itemView.findViewById(R.id.no_of_tests);
-
         }
     }
 }

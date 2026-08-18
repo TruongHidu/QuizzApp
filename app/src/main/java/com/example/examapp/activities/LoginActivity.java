@@ -1,36 +1,34 @@
 package com.example.examapp.activities;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Patterns;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.example.examapp.R;
-import com.example.examapp.admin.AddQuestionActivity;
-import com.example.examapp.database.DbQuery;
+import com.example.examapp.activities.MainActivity;
+import com.example.examapp.activities.SignUpActivity;
+import com.example.examapp.admin.HomeAdminActivity;
 import com.example.examapp.databinding.ActivityLoginBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
-import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.viewmodel.LoginViewModel;
 
 public class LoginActivity extends AppCompatActivity {
-    ActivityLoginBinding binding;
-    FirebaseAuth mAuth;
-    Dialog progressDialog;
-    TextView dialogText;
+    private ActivityLoginBinding binding;
+    private LoginViewModel viewModel;
+    private ProgressDialogUtil progressDialogUtil;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,36 +36,63 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
 
+        // Khởi tạo ProgressDialogUtil
+        progressDialogUtil = new ProgressDialogUtil(this);
 
+        // Quan sát lỗi
+        viewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(LoginActivity.this, error, Toast.LENGTH_SHORT).show();
+                // Disable login button if blocked due to too many failed attempts
+                if (error.contains("Too many failed attempts")) {
+                    binding.btnLogin.setEnabled(false);
+                } else {
+                    binding.btnLogin.setEnabled(true);
+                }
+            }
+        });
 
-
-        progressDialog = new Dialog(LoginActivity.this);
-        progressDialog.setContentView(R.layout.dialog_layout);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        dialogText = progressDialog.findViewById(R.id.txtDialog);
-        dialogText.setText("Signing in ...");
-
-
-
-
-        mAuth = FirebaseAuth.getInstance();
-
-        events();
-
-
-
+        // Thiết lập sự kiện
+        setupEvents();
     }
 
-    private void events() {
+    private void setupEvents() {
         binding.btnLogin.setOnClickListener(view -> {
-            if (validateData()){
-                login();
+            String email = binding.txtEmail.getText().toString().trim();
+            String password = binding.txtPassword.getText().toString().trim();
 
+            if (viewModel.validateData(email, password)) {
+                progressDialogUtil.show("Signing in...");
+                viewModel.login(email, password, new MyCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        progressDialogUtil.dismiss();
+                        binding.btnLogin.setEnabled(true); // Ensure button is enabled on success
+                        if (email.equals("admin@gmail.com")) {
+                            startActivity(new Intent(LoginActivity.this, HomeAdminActivity.class));
+                        } else {
+                            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                        }
+                    }
+
+                    @Override
+                    public void onFailture() {
+                        progressDialogUtil.dismiss();
+                    }
+                });
+            } else {
+                if (email.isEmpty()) {
+                    binding.txtEmail.setError("Enter email");
+                } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    binding.txtEmail.setError("Email not qualified!");
+                }
+                if (password.isEmpty()) {
+                    binding.txtPassword.setError("Input password");
+                }
             }
-
         });
 
         binding.txtSignUp.setOnClickListener(view -> {
@@ -75,86 +100,79 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         binding.gSignIn.setOnClickListener(view -> {
-            googleSignIn();
+            // Xử lý Google Sign-In (chưa triển khai)
+            Toast.makeText(this, "Google Sign-In not implemented", Toast.LENGTH_SHORT).show();
         });
-//
-//        binding.gSignIn.setOnClickListener(view -> {
-//            Intent intent = new Intent(LoginActivity.this, AddQuestionActivity.class);
-//            startActivity(intent);
-//            LoginActivity.this.finish();
-//        });
+
+        binding.txtForgot.setOnClickListener(view -> {
+            showResetPasswordDialog();
+        });
     }
 
-    private void googleSignIn() {
+    private void showResetPasswordDialog() {
+        Dialog resetDialog = new Dialog(this);
+        resetDialog.setContentView(R.layout.dialog_reset_password);
+        resetDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        resetDialog.setCancelable(true);
+
+        EditText editTextEmail = resetDialog.findViewById(R.id.editTextEmail);
+        Button btnCancel = resetDialog.findViewById(R.id.btnCancel);
+        Button btnReset = resetDialog.findViewById(R.id.btnReset);
+
+        btnCancel.setOnClickListener(v -> resetDialog.dismiss());
+
+        btnReset.setOnClickListener(v -> {
+            String email = editTextEmail.getText().toString().trim();
+            if (email.isEmpty()) {
+                editTextEmail.setError("Enter email");
+                return;
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                editTextEmail.setError("Invalid email format");
+                return;
+            }
+
+            progressDialogUtil.show("Processing password reset...");
+
+            viewModel.resetPassword(email, new MyCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    progressDialogUtil.dismiss();
+                    resetDialog.dismiss();
+                    Toast.makeText(LoginActivity.this, "Password reset email sent. Check your inbox.", Toast.LENGTH_LONG).show();
+                }
+
+                @Override
+                public void onFailture() {
+                    progressDialogUtil.dismiss();
+                    // Error message is handled by ViewModel's errorMessage LiveData
+                }
+            });
+        });
+
+        resetDialog.show();
     }
 
-    private void login() {
-        progressDialog.show();
-        String email = binding.txtEmail.getText().toString().trim();
-        String password = binding.txtPassword.getText().toString().trim();
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View v = getCurrentFocus();
+            if (v instanceof EditText) {
+                int[] location = new int[2];
+                v.getLocationOnScreen(location);
+                float x = ev.getRawX() + v.getLeft() - location[0];
+                float y = ev.getRawY() + v.getTop() - location[1];
 
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Đăng nhập thành công
-                            Toast.makeText(LoginActivity.this, "Login success.", Toast.LENGTH_SHORT).show();
-
-                            DbQuery.loadData(new MyCompleteListener() {
-                                @Override
-                                public void onSuccess() {
-                                    progressDialog.dismiss();
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                    startActivity(intent);
-                                    LoginActivity.this.finish();
-                                }
-
-                                @Override
-                                public void onFailture() {
-                                    progressDialog.dismiss();
-                                    Toast.makeText(LoginActivity.this, "Something went wrong! Please try again later.",
-                                            Toast.LENGTH_SHORT).show();
-                                }
-                            });
-
-                        } else {
-                            progressDialog.dismiss();
-
-                            Exception e = task.getException();
-                            if (e instanceof FirebaseAuthInvalidUserException) {
-                                // Email không tồn tại
-                                Toast.makeText(LoginActivity.this, "Email not exists!", Toast.LENGTH_SHORT).show();
-                            } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                                // Mật khẩu sai
-                                Toast.makeText(LoginActivity.this, "Invalid password. Please try again!", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(LoginActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
+                if (x < v.getLeft() || x > v.getRight() || y < v.getTop() || y > v.getBottom()) {
+                    // Ẩn bàn phím
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                     }
-                });
-    }
-
-
-    private boolean validateData() {
-        String email = binding.txtEmail.getText().toString().trim();
-        String password = binding.txtPassword.getText().toString().trim();
-
-        if (email.isEmpty()) {
-            binding.txtEmail.setError("Enter email");
-            return false;
-        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.txtEmail.setError("Email not qualified!");
-            return false;
+                    v.clearFocus();
+                }
+            }
         }
-
-        if (password.isEmpty()) {
-            binding.txtPassword.setError("Input password");
-            return false;
-        }
-
-        return true;
+        return super.dispatchTouchEvent(ev);
     }
-
 }

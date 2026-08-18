@@ -2,8 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#0404ff</color>
-    <color name="colorPrimaryDark">#10028f</color>
+    <color name="colorPrimary">#00bcd4</color>
+    <color name="colorPrimaryDark">#00bcd4</color>
     <color name="colorAccent">#ffffff</color>
     <color name="main_background">#e1edfd</color>
     <color name="green">#2df836</color>
@@ -13,4 +13,11 @@
     <color name="red">#ff0000</color>
     <color name="greenLight">#1DE9B6</color>
     <color name="textNormal">#919191</color>
+    <color name="blueDark">#00bcd4</color>
+    <color name="purple">#9C27B0</color>
+    <color name="gray_light">#E0E0E0</color>
+    <color name="gray_dark">#616161</color>
+    <color name="blueQuestion">#3075BB</color>
+    <color name="pinkQuestion">#F50057</color>
+
 </resources>

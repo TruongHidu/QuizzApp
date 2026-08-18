@@ -3,28 +3,27 @@ package com.example.examapp.activities;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
-import com.example.examapp.adapter.AnswerAdapter;
 import com.example.examapp.adapter.BookMarkAdapter;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityBookMarkBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.viewmodel.BookMarkViewModel;
 
 public class BookMarkActivity extends AppCompatActivity {
     private ActivityBookMarkBinding binding;
     private BookMarkAdapter adapter;
+    private BookMarkViewModel viewModel;
     private Dialog progressDialog;
     private TextView dialogText;
 
@@ -48,31 +47,47 @@ public class BookMarkActivity extends AppCompatActivity {
         dialogText.setText("Loading ...");
         progressDialog.show();
 
-        // Khởi tạo adapter rỗng ngay từ đầu
-        adapter = new BookMarkAdapter(DbQuery.g_bookmarkList);
+        viewModel = new ViewModelProvider(this).get(BookMarkViewModel.class);
+        adapter = new BookMarkAdapter(viewModel);
         binding.rcvAnswerBookmark.setLayoutManager(new LinearLayoutManager(this));
         binding.rcvAnswerBookmark.setAdapter(adapter);
 
-        DbQuery.loadBookMarks(new MyCompleteListener() {
+        viewModel.getBookmarkList().observe(this, questions -> {
+            adapter.notifyDataSetChanged();
+            if (questions == null || questions.isEmpty()) {
+                binding.rcvAnswerBookmark.setVisibility(View.GONE);
+                binding.emptyTextView.setVisibility(View.VISIBLE);
+            } else {
+                binding.rcvAnswerBookmark.setVisibility(View.VISIBLE);
+                binding.emptyTextView.setVisibility(View.GONE);
+            }
+        });
+
+        viewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.loadBookMarks(new MyCompleteListener() {
             @Override
             public void onSuccess() {
-                adapter.notifyDataSetChanged();  // Bây giờ adapter đã sẵn sàng
                 progressDialog.dismiss();
             }
 
             @Override
             public void onFailture() {
                 progressDialog.dismiss();
+                Toast.makeText(BookMarkActivity.this, "Failed to load bookmarks", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item){
-        if(item.getItemId() == android.R.id.home){
-            BookMarkActivity.this.finish();
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
         }
         return super.onOptionsItemSelected(item);
     }
-    }
+}

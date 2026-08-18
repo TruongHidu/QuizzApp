@@ -12,7 +12,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/colorPrimary"
+        android:background="@drawable/main_color_toolbar"
         android:theme="@style/ThemeOverlay.AppCompat.Dark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,7 +22,7 @@
         android:id="@+id/ll1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
+        android:background="@drawable/main_color_toolbar"
         android:gravity="center"
         android:paddingTop="32dp"
         android:paddingBottom="64dp"
@@ -40,7 +40,7 @@
             android:gravity="center"
             android:text="A"
             android:textColor="@color/white"
-            android:textSize="48sp"
+            android:textSize="30sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -97,47 +97,55 @@
                     android:inputType="textEmailAddress" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Phone Number"
-                android:layout_marginTop="12dp">
+<!--            <com.google.android.material.textfield.TextInputLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:hint="Phone Number"-->
+<!--                android:layout_marginTop="12dp">-->
 
-                <EditText
-                    android:id="@+id/txtProfilePhone"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="phone" />
-            </com.google.android.material.textfield.TextInputLayout>
+<!--                <EditText-->
+<!--                    android:id="@+id/txtProfilePhone"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:inputType="phone" />-->
+<!--            </com.google.android.material.textfield.TextInputLayout>-->
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="5dp"
+        android:layout_marginBottom="10dp"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:orientation="horizontal">
+        app:layout_constraintRight_toRightOf="parent">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCancel"
             android:layout_width="wrap_content"
-            android:background="@color/colorPrimary"
             android:layout_height="match_parent"
-            android:textColor="@color/white"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:background="@drawable/selectd_button"
+            android:backgroundTint="@color/gray"
             android:text="Cancel"
-            android:textSize="18sp"
-            android:layout_weight="1"/>
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnSave"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:textColor="@color/white"
+            android:layout_weight="1"
+            android:background="@drawable/selectd_button"
+            android:backgroundTint="@color/colorPrimary"
             android:text="Save"
-            android:background="@color/colorPrimary"
-            android:textSize="18sp"
-            android:layout_weight="1"/>
+            android:textColor="@color/white"
+            android:textSize="18sp" />
 
 
     </LinearLayout>

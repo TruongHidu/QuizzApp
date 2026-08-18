@@ -1,5 +1,8 @@
 <resources>
-    <string name="app_name">Exam Practice</string>
+    <string name="default_web_client_id">736781606933-mumh2omkhoch28nmpg2m5lvsgiigkqv0.apps.googleusercontent.com</string>
+
+
+    <string name="app_name">Quizz Funny</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
 

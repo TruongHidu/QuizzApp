@@ -1,66 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
+    android:layout_marginStart="16dp"
     android:layout_marginTop="8dp"
-    android:background="@drawable/round_view"
-    android:orientation="vertical">
+    android:layout_marginEnd="16dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/txtQuestionNo"
-        android:text="Question: 1"/>
-
-    <View
-        android:id="@+id/divider2"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?android:attr/listDivider"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:id="@+id/txtQuestion"
-        android:layout_marginLeft="5dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Quetion"
-        android:layout_marginBottom="8dp"
-        android:textColor="@color/black"
-        />
-    <TextView
-        android:id="@+id/txtOptionA"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="A. adsad"/>
-    <TextView
-        android:id="@+id/txtOptionB"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="A. adsad"/>
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/txtOptionC"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="A. adsad"/>
+        <!-- Question Number -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtQuestionNo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Question: 1"
+            android:textColor="@color/blueQuestion"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/txtOptionD"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="A. adsad"/>
+        <!-- Bookmark Button -->
+        <ImageView
+            android:id="@+id/btnBookmark"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="Bookmark Question"
+            android:src="@drawable/ic_bookmark_border"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/txtResult"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Wrong"
-        android:textStyle="bold"
-        android:textColor="@color/red"/>
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtQuestionNo" />
 
+        <!-- Question Text -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtQuestion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Question"
+            android:textColor="@color/gray_dark"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/divider2" />
 
+        <!-- Option A -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtOptionA"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:padding="8dp"
+            android:text="A. Option A"
+            android:textColor="@color/gray_dark"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtQuestion" />
 
+        <!-- Option B -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtOptionB"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="8dp"
+            android:text="B. Option B"
+            android:textColor="@color/gray_dark"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtOptionA" />
 
-</LinearLayout>
+        <!-- Option C -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtOptionC"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="8dp"
+            android:text="C. Option C"
+            android:textColor="@color/gray_dark"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtOptionB" />
+
+        <!-- Option D -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtOptionD"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:padding="8dp"
+            android:text="D. Option D"
+            android:textColor="@color/gray_dark"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtOptionC" />
+
+        <!-- Result -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txtResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Result"
+            android:textColor="@color/green"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtOptionD" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -9,19 +9,18 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.examapp.R;
-import com.example.examapp.database.DbQuery;
+import com.example.examapp.activities.LoginActivity;
+import com.example.examapp.activities.MainActivity;
 import com.example.examapp.databinding.ActivitySplashBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
-import com.google.firebase.Firebase;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.examapp.viewmodel.SplashViewModel;
 
 public class SplashActivity extends AppCompatActivity {
-    ActivitySplashBinding binding;
-    private FirebaseAuth mAuth;
-
+    private ActivitySplashBinding binding;
+    private SplashViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,46 +28,43 @@ public class SplashActivity extends AppCompatActivity {
         binding = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(SplashViewModel.class);
+
+        // Thiết lập font và animation
         Typeface typeface = ResourcesCompat.getFont(this, R.font.font1);
         binding.appName.setTypeface(typeface);
 
-        Animation animation = AnimationUtils.loadAnimation(this,R.anim.myappim);
+        Animation animation = AnimationUtils.loadAnimation(this, R.anim.myappim);
         binding.appName.setAnimation(animation);
 
-        mAuth = FirebaseAuth.getInstance();
-        DbQuery.g_firestore = FirebaseFirestore.getInstance();
-
-
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    sleep(1000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                runOnUiThread(() -> {
-                    if (mAuth.getCurrentUser() != null) {
-                        DbQuery.loadData(new MyCompleteListener() {
-                            @Override
-                            public void onSuccess() {
-                                startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                                finish();
-                            }
-
-                            @Override
-                            public void onFailture() {
-                                Toast.makeText(SplashActivity.this, "Something went wrong! Please try again later.", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else {
-                        startActivity(new Intent(SplashActivity.this, LoginActivity.class));
-                        finish();
-                    }
-                });
+        // Kiểm tra trạng thái đăng nhập
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        }.start();
 
+            runOnUiThread(() -> {
+                if (viewModel.isUserLoggedIn()) {
+                    viewModel.loadData(new MyCompleteListener() {
+                        @Override
+                        public void onSuccess() {
+                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                            finish();
+                        }
+
+                        @Override
+                        public void onFailture() {
+                            Toast.makeText(SplashActivity.this, "Something went wrong! Please try again later.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+                    finish();
+                }
+            });
+        }).start();
     }
 }

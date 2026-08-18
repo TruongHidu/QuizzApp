@@ -11,32 +11,41 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.examapp.R;
-import com.example.examapp.activities.QuestionActivity;
 import com.example.examapp.activities.StartTestActivity;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.model.TestModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder> {
     private List<TestModel> testList;
-    public TestAdapter(List<TestModel> testList) {
-        this.testList = testList;
+    private final OnTestClickListener clickListener;
+
+    public interface OnTestClickListener {
+        void onTestClicked(int position);
     }
 
+    public TestAdapter(List<TestModel> testList, OnTestClickListener clickListener) {
+        this.testList = new ArrayList<>(testList);
+        this.clickListener = clickListener;
+    }
+
+    public void updateData(List<TestModel> newTestList) {
+        this.testList.clear();
+        this.testList.addAll(newTestList);
+        notifyDataSetChanged();
+    }
 
     @NonNull
     @Override
-    public TestAdapter.TestViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+    public TestViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
         View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.test_item_layout, viewGroup, false);
         return new TestViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull TestAdapter.TestViewHolder testViewHolder, int position) {
-        int progress = testList.get(position).getTopScore();
-        testViewHolder.setData(position, progress);
-
+    public void onBindViewHolder(@NonNull TestViewHolder holder, int position) {
+        holder.setData(position, testList.get(position));
     }
 
     @Override
@@ -44,7 +53,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
         return testList.size();
     }
 
-    public static class TestViewHolder extends RecyclerView.ViewHolder {
+    public class TestViewHolder extends RecyclerView.ViewHolder {
         private TextView testNo;
         private ProgressBar testProgressBar;
         private TextView txtScore;
@@ -54,21 +63,16 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
             testNo = itemView.findViewById(R.id.txtTestName);
             testProgressBar = itemView.findViewById(R.id.testProgressBar);
             txtScore = itemView.findViewById(R.id.txtScore);
-
         }
 
-        public void setData(int position, int progress) {
+        public void setData(int position, TestModel testModel) {
             if (getAdapterPosition() == RecyclerView.NO_POSITION) return;
 
-            testNo.setText("Test No " + (position + 1));
-            txtScore.setText(progress + "%");
-            testProgressBar.setProgress(progress);
+            testNo.setText(testModel.getTestId());
+            txtScore.setText(testModel.getTopScore() + "%");
+            testProgressBar.setProgress(testModel.getTopScore());
 
-            itemView.setOnClickListener(view -> {
-                DbQuery.g_selected_test_index = getAdapterPosition(); // Lấy vị trí hợp lệ
-                Intent intent = new Intent(itemView.getContext(), StartTestActivity.class);
-                itemView.getContext().startActivity(intent);
-            });
+            itemView.setOnClickListener(view -> clickListener.onTestClicked(getAdapterPosition()));
         }
     }
 }

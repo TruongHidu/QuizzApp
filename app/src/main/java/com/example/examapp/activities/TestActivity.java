@@ -1,37 +1,25 @@
 package com.example.examapp.activities;
 
-import android.app.Dialog;
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.view.View;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.examapp.CategoryFragment;
-import com.example.examapp.R;
-import com.example.examapp.adapter.CategoryAdapter;
 import com.example.examapp.adapter.TestAdapter;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityTestBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
-import com.example.examapp.model.TestModel;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.viewmodel.TestViewModel;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class TestActivity extends AppCompatActivity {
-    ActivityTestBinding binding;
-    private List<TestModel> testList;
-    TestAdapter adapter;
-    Dialog progressDialog;
-    TextView dialogText;
+public class TestActivity extends AppCompatActivity implements TestAdapter.OnTestClickListener {
+    private ActivityTestBinding binding;
+    private TestViewModel viewModel;
+    private TestAdapter adapter;
+    private ProgressDialogUtil progressDialogUtil;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,86 +29,89 @@ public class TestActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        if (DbQuery.g_categoryList != null && !DbQuery.g_categoryList.isEmpty()) {
-            getSupportActionBar().setTitle(DbQuery.g_categoryList.get(DbQuery.g_selectedCatIndex).getName());
+        progressDialogUtil = new ProgressDialogUtil(this);
+        progressDialogUtil.show("Loading ...");
+
+        viewModel = new ViewModelProvider(this).get(TestViewModel.class);
+
+        // Set toolbar title using ViewModel
+        if (!viewModel.getCurrentCategoryList().isEmpty()) {
+            getSupportActionBar().setTitle(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
         } else {
             getSupportActionBar().setTitle("Tests");
         }
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        progressDialog = new Dialog(TestActivity.this);
-        progressDialog.setContentView(R.layout.dialog_layout);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        dialogText = progressDialog.findViewById(R.id.txtDialog);
-        dialogText.setText("Loading ...");
-
-        progressDialog.show();
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setOrientation(RecyclerView.VERTICAL);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         binding.rcvTest.setLayoutManager(layoutManager);
-        DbQuery.initFirestore();
+        adapter = new TestAdapter(viewModel.getCurrentTestList(), this);
+        binding.rcvTest.setAdapter(adapter);
 
-        if (DbQuery.g_categoryList.isEmpty()) {
-            DbQuery.loadCategories(new MyCompleteListener() {
+        viewModel.getTests().observe(this, tests -> {
+            progressDialogUtil.dismiss();
+            if (tests != null) {
+                adapter.updateData(tests);
+                binding.rcvTest.setVisibility(tests.isEmpty() ? View.GONE : View.VISIBLE);
+                binding.emptyView.setVisibility(tests.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+        });
+
+        viewModel.getErrorMessage().observe(this, error -> {
+            progressDialogUtil.dismiss();
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Load categories if empty, then load tests
+        if (viewModel.getCurrentCategoryList().isEmpty()) {
+            viewModel.loadCategories(new MyCompleteListener() {
                 @Override
                 public void onSuccess() {
-                    loadTests(); // Chỉ gọi khi có category
+                    // Update toolbar title after categories load
+                    if (!viewModel.getCurrentCategoryList().isEmpty()) {
+                        getSupportActionBar().setTitle(viewModel.getCurrentCategoryList().get(viewModel.getSelectedCategoryIndex()).getName());
+                    }
+                    viewModel.loadTestData();
                 }
 
                 @Override
                 public void onFailture() {
-                    progressDialog.dismiss();
+                    progressDialogUtil.dismiss();
                     Toast.makeText(TestActivity.this, "Failed to load categories!", Toast.LENGTH_SHORT).show();
                 }
             });
         } else {
-            loadTests();
+            viewModel.loadTestData();
         }
     }
 
-    // Tách loadTests() ra ngoài onCreate()
-    private void loadTests() {
-        DbQuery.loadTestData(new MyCompleteListener() {
-            @Override
-            public void onSuccess() {
-                DbQuery.loadMyScore(new MyCompleteListener() {
-                    @Override
-                    public void onSuccess() {
-                        progressDialog.dismiss();
-                        if (DbQuery.g_testList != null) {
-                            adapter = new TestAdapter(DbQuery.g_testList);
-                            binding.rcvTest.setAdapter(adapter);
-                        } else {
-                            Toast.makeText(TestActivity.this, "None tests available", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                    @Override
-                    public void onFailture(){
-                        progressDialog.dismiss();
-                        Toast.makeText(TestActivity.this, "Something went wrong! Please try again later.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-            @Override
-            public void onFailture() {
-                progressDialog.dismiss();
-                Toast.makeText(TestActivity.this, "Don't have any test of this Category!", Toast.LENGTH_SHORT).show();
-            }
-        });
+    @Override
+    public void onTestClicked(int position) {
+        viewModel.setSelectedTestIndex(position);
+        Intent intent = new Intent(this, StartTestActivity.class);
+        startActivity(intent);
     }
+
     @Override
     public boolean onSupportNavigateUp() {
+        progressDialogUtil.dismiss();
         finish();
         return true;
     }
+
     @Override
     protected void onRestart() {
         super.onRestart();
-        loadTests(); // Gọi lại để cập nhật danh sách bài kiểm tra
+        progressDialogUtil.show("Loading ...");
+        viewModel.loadTestData();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        progressDialogUtil.dismiss();
+    }
 }

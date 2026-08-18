@@ -1,28 +1,27 @@
 package com.example.examapp.activities;
 
-import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.example.examapp.R;
-import com.example.examapp.database.DbQuery;
 import com.example.examapp.databinding.ActivityMyProfileBinding;
 import com.example.examapp.handlerlistener.MyCompleteListener;
+import com.example.examapp.model.ProfileModel;
+import com.example.examapp.utils.ProgressDialogUtil;
+import com.example.examapp.viewmodel.AuthViewModel;
 
 public class MyProfileActivity extends AppCompatActivity {
-    ActivityMyProfileBinding binding;
-    private String nameStr, phoneStr;
-    private Dialog progressDialog;
-    private TextView dialogText;
+    private ActivityMyProfileBinding binding;
+    private AuthViewModel viewModel;
+    private ProgressDialogUtil progressDialog;
+    private String nameStr;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,54 +29,59 @@ public class MyProfileActivity extends AppCompatActivity {
         binding = ActivityMyProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        progressDialog = new Dialog(MyProfileActivity.this);
-        progressDialog.setContentView(R.layout.dialog_layout);
-        progressDialog.setCancelable(false);
-        progressDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        dialogText = progressDialog.findViewById(R.id.txtDialog);
-        dialogText.setText("Saving ...");
-
-
+        viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        progressDialog = new ProgressDialogUtil(this);
 
         setSupportActionBar(binding.toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
         getSupportActionBar().setTitle("Profile");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        disableEditing();
+        // Load user profile data
+        viewModel.loadUserProfile();
+
+        // Observe profile data
+        viewModel.getUserProfile().observe(this, profile -> {
+            if (profile != null) {
+                disableEditing(profile);
+            } else {
+                Toast.makeText(MyProfileActivity.this, "Failed to load profile data", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Observe error messages
+        viewModel.getErrorMessage().observe(this, error -> {
+            progressDialog.dismiss();
+            Toast.makeText(MyProfileActivity.this, error, Toast.LENGTH_LONG).show();
+        });
 
         addEvent();
-
     }
 
-    private void disableEditing() {
+    private void disableEditing(ProfileModel profile) {
         binding.txtProfileEmail.setEnabled(false);
         binding.txtProfileName.setEnabled(false);
-        binding.txtProfilePhone.setEnabled(false);
         binding.btnSave.setVisibility(View.GONE);
         binding.btnEdit.setVisibility(View.VISIBLE);
         binding.btnCancel.setVisibility(View.GONE);
 
-        binding.txtProfileName.setText(DbQuery.myProfile.getName());
-        binding.txtProfileEmail.setText(DbQuery.myProfile.getEmail());
-        if(DbQuery.myProfile.getPhone() != null) {
-            binding.txtProfilePhone.setText(DbQuery.myProfile.getPhone());
-        }
-        String profileName = DbQuery.myProfile.getName();
-        binding.profileText.setText(profileName.toUpperCase().substring(0, 1));
+        binding.txtProfileName.setText(profile.getName());
+        binding.txtProfileEmail.setText(profile.getEmail());
+        String profileName = profile.getName();
+        binding.profileText.setText(profileName != null && !profileName.isEmpty() ?
+                profileName.toUpperCase().substring(0, 1) : "NA");
     }
 
     private void addEvent() {
-        binding.btnCancel.setOnClickListener(view -> {
-            disableEditing();
-
-        });
+        binding.btnCancel.setOnClickListener(view -> viewModel.loadUserProfile()); // Reload profile to reset fields
 
         binding.btnEdit.setOnClickListener(view -> {
+            view.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100)
+                    .withEndAction(() -> view.animate().scaleX(1f).scaleY(1f).setDuration(100).start())
+                    .start();
             enableEditing();
-
         });
+
         binding.btnSave.setOnClickListener(view -> {
             if (validate()) {
                 saveData();
@@ -86,59 +90,62 @@ public class MyProfileActivity extends AppCompatActivity {
     }
 
     private void saveData() {
-        progressDialog.show();
-        if(phoneStr.isEmpty()){
-            phoneStr = null;
-        }
-
-        DbQuery.saveUserData(nameStr, phoneStr, new MyCompleteListener(){
-                @Override
-                public void onSuccess() {
-                    Toast.makeText(MyProfileActivity.this, "Data saved successfully!", Toast.LENGTH_SHORT).show();
-                    progressDialog.dismiss();
-                    disableEditing();
-                }
-                @Override
-                public void onFailture() {
-                    Toast.makeText(MyProfileActivity.this, "Failed to save data!", Toast.LENGTH_SHORT).show();
-                    progressDialog.dismiss();
-                }
-            });
-
-
+        progressDialog.show("Saving...");
+        viewModel.saveUserData(nameStr, new MyCompleteListener() {
+            @Override
+            public void onSuccess() {
+                progressDialog.dismiss();
+                Toast.makeText(MyProfileActivity.this, "Data saved successfully!", Toast.LENGTH_SHORT).show();
+                viewModel.loadUserProfile(); // Reload profile to update UI
             }
+            @Override
+            public void onFailture() {
+                // Error handled via errorMessage LiveData
+            }
+        });
+    }
 
     private void enableEditing() {
         binding.txtProfileName.setEnabled(true);
-        binding.txtProfilePhone.setEnabled(true);
         binding.btnSave.setVisibility(View.VISIBLE);
         binding.btnEdit.setVisibility(View.GONE);
         binding.btnCancel.setVisibility(View.VISIBLE);
     }
 
     private boolean validate() {
-        nameStr = binding.txtProfileName.getText().toString();
-        phoneStr = binding.txtProfilePhone.getText().toString();
-        if(nameStr.isEmpty()) {
+        nameStr = binding.txtProfileName.getText().toString().trim();
+        if (nameStr.isEmpty()) {
             binding.txtProfileName.setError("Please enter your name");
             return false;
-        }
-        if( phoneStr.isEmpty()) {
-            binding.txtProfilePhone.setError("Please enter your phone");
-            return false;
-        }else{
-            if( !((phoneStr.length()) == 10) || (!phoneStr.matches("[0-9]+"))) {
-                binding.txtProfilePhone.setError("Please enter a valid phone number");
-                return false;
-            }
-
         }
         return true;
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish(); // Đóng activity hiện tại để quay lại activity trước
+        finish();
         return true;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View v = getCurrentFocus();
+            if (v instanceof EditText) {
+                int[] location = new int[2];
+                v.getLocationOnScreen(location);
+                float x = ev.getRawX() + v.getLeft() - location[0];
+                float y = ev.getRawY() + v.getTop() - location[1];
+
+                if (x < v.getLeft() || x > v.getRight() || y < v.getTop() || y > v.getBottom()) {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    }
+                    v.clearFocus();
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev);
     }
 }
